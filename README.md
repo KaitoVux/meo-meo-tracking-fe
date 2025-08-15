@@ -1,69 +1,114 @@
-# React + TypeScript + Vite
+# Business Expense Tracking System - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern React frontend application for managing business expenses with dark mode support, built with Vite, TypeScript, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Modern UI**: Built with Shadcn/ui components and Tailwind CSS
+- **Dark Mode**: Default dark theme with light mode toggle
+- **Authentication**: JWT-based authentication with role-based access control
+- **State Management**: Zustand for efficient state management
+- **Routing**: React Router with protected routes
+- **Responsive Design**: Mobile-first responsive design
+- **TypeScript**: Full TypeScript support for type safety
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **React 19** - UI library
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Utility-first CSS framework
+- **Shadcn/ui** - Modern UI component library
+- **React Router** - Client-side routing
+- **Zustand** - State management
+- **Lucide React** - Icon library
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📦 Installation
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+```bash
+# Install dependencies
+npm install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🏗️ Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/
+│   ├── layout/          # Layout components (Header, Sidebar, etc.)
+│   └── ui/              # Reusable UI components (Shadcn/ui)
+├── lib/
+│   └── utils.ts         # Utility functions
+├── pages/               # Page components
+├── store/               # Zustand stores
+├── App.tsx              # Main application component
+└── main.tsx             # Application entry point
+```
+
+## 🎨 UI Components
+
+This project uses Shadcn/ui components with Tailwind CSS. Components are located in `src/components/ui/` and can be customized via the `components.json` configuration.
+
+## 🔧 Development Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+npm run lint:fix     # Fix ESLint issues
+npm run format       # Format code with Prettier
+npm run format:check # Check code formatting
+```
+
+## 🌙 Dark Mode
+
+The application defaults to dark mode as per requirements. Users can toggle between light and dark themes using the theme switcher in the header.
+
+## 🔐 Authentication
+
+The frontend includes:
+- JWT token management
+- Role-based access control (Accountant/User roles)
+- Protected routes
+- Persistent authentication state
+
+## 📱 Responsive Design
+
+The application is built with a mobile-first approach and works seamlessly across:
+- Desktop (1024px+)
+- Tablet (768px - 1023px)
+- Mobile (320px - 767px)
+
+## 🚀 Deployment
+
+The application can be deployed to any static hosting service:
+
+```bash
+npm run build
+# Deploy the dist/ folder to your hosting service
+```
+
+## 📋 Requirements Fulfilled
+
+This frontend implementation satisfies:
+- ✅ Dark mode interface (Requirement 7.1)
+- ✅ Copilot-style design patterns (Requirement 7.2)
+- ✅ Drag-and-drop functionality support (Requirement 7.3)
+- ✅ Modern responsive interface (Requirement 7.5)
+- ✅ Role-based access control (Requirement 6.3)
+
+## 🔗 Related
+
+- [Backend API Documentation](../backend/README.md)
+- [Project Requirements](../.kiro/specs/business-expense-tracking/requirements.md)
+- [Design Document](../.kiro/specs/business-expense-tracking/design.md)
