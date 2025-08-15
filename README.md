@@ -77,6 +77,7 @@ The application defaults to dark mode as per requirements. Users can toggle betw
 ## 🔐 Authentication
 
 The frontend includes:
+
 - JWT token management
 - Role-based access control (Accountant/User roles)
 - Protected routes
@@ -85,6 +86,7 @@ The frontend includes:
 ## 📱 Responsive Design
 
 The application is built with a mobile-first approach and works seamlessly across:
+
 - Desktop (1024px+)
 - Tablet (768px - 1023px)
 - Mobile (320px - 767px)
@@ -101,6 +103,7 @@ npm run build
 ## 📋 Requirements Fulfilled
 
 This frontend implementation satisfies:
+
 - ✅ Dark mode interface (Requirement 7.1)
 - ✅ Copilot-style design patterns (Requirement 7.2)
 - ✅ Drag-and-drop functionality support (Requirement 7.3)
@@ -111,4 +114,18 @@ This frontend implementation satisfies:
 
 - [Backend API Documentation](../backend/README.md)
 - [Project Requirements](../.kiro/specs/business-expense-tracking/requirements.md)
-- [Design Document](../.kiro/specs/business-expense-tracking/design.md)
+- [Design Document](../.kiro/specs/business-expense-tracking/design.md)# Linting and Code Quality
+
+This project uses ESLint, Prettier, and Husky for code quality enforcement.
+
+## Pre-commit Hooks
+
+- Linting and formatting are automatically applied
+- Commit messages must follow conventional commit format
+
+## Available Scripts
+
+- `npm run lint` - Check for linting errors
+- `npm run lint:fix` - Fix auto-fixable linting errors
+- `npm run format` - Format code with Prettier
+- `npm run type-check` - Run TypeScript type checking
