@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         set({ user: null, token: null, isAuthenticated: false })
       },
-      updateUser: (userData) => {
+      updateUser: userData => {
         const currentUser = get().user
         if (currentUser) {
           set({ user: { ...currentUser, ...userData } })

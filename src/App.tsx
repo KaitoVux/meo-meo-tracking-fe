@@ -1,5 +1,11 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom'
+
 import { AppLayout } from './components/layout/AppLayout'
 import { Dashboard } from './pages/Dashboard'
 import { useAuthStore } from './store/auth'
@@ -13,19 +19,19 @@ const Settings = () => <div>Settings Page - Coming Soon</div>
 const Login = () => <div>Login Page - Coming Soon</div>
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
-  
+
   return <>{children}</>
 }
 
 function App() {
   // For demo purposes, let's auto-login a user
   const { login, isAuthenticated } = useAuthStore()
-  
+
   React.useEffect(() => {
     if (!isAuthenticated) {
       // Auto-login for demo - remove this in production
@@ -35,7 +41,7 @@ function App() {
           email: 'admin@example.com',
           firstName: 'Admin',
           lastName: 'User',
-          role: 'ACCOUNTANT'
+          role: 'ACCOUNTANT',
         },
         'demo-token'
       )

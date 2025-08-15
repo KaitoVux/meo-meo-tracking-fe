@@ -1,7 +1,8 @@
+import { Moon, Sun, User, LogOut } from 'lucide-react'
 import React from 'react'
+
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth'
-import { Moon, Sun, User, LogOut } from 'lucide-react'
 
 export function Header() {
   const { user, logout } = useAuthStore()
@@ -26,16 +27,16 @@ export function Header() {
             Manage your business expenses efficiently
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-          >
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+            {isDark ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
           </Button>
-          
+
           {user && (
             <>
               <div className="flex items-center space-x-2">
@@ -47,12 +48,8 @@ export function Header() {
                   ({user.role})
                 </span>
               </div>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={logout}
-              >
+
+              <Button variant="ghost" size="icon" onClick={logout}>
                 <LogOut className="h-4 w-4" />
               </Button>
             </>

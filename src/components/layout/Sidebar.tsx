@@ -1,14 +1,15 @@
+import {
+  LayoutDashboard,
+  Receipt,
+  FileText,
+  Upload,
+  Settings,
+  PlusCircle,
+} from 'lucide-react'
 import React from 'react'
 import { NavLink } from 'react-router-dom'
+
 import { cn } from '@/lib/utils'
-import { 
-  LayoutDashboard, 
-  Receipt, 
-  FileText, 
-  Upload, 
-  Settings,
-  PlusCircle
-} from 'lucide-react'
 
 const navigation = [
   {
@@ -49,9 +50,9 @@ export function Sidebar() {
       <div className="p-6">
         <div className="text-lg font-semibold">Navigation</div>
       </div>
-      
+
       <nav className="px-4 space-y-2">
-        {navigation.map((item) => (
+        {navigation.map(item => (
           <NavLink
             key={item.name}
             to={item.href}

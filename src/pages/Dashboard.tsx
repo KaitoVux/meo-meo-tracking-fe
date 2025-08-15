@@ -1,5 +1,12 @@
 import React from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
 export function Dashboard() {
   return (
@@ -25,7 +32,7 @@ export function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -39,12 +46,10 @@ export function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              This Month
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$12,234</div>
@@ -53,7 +58,7 @@ export function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -62,9 +67,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">24</div>
-            <p className="text-xs text-muted-foreground">
-              +2 new this month
-            </p>
+            <p className="text-xs text-muted-foreground">+2 new this month</p>
           </CardContent>
         </Card>
       </div>
@@ -73,9 +76,7 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Expenses</CardTitle>
-            <CardDescription>
-              Your latest expense submissions
-            </CardDescription>
+            <CardDescription>Your latest expense submissions</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -106,9 +107,7 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Common tasks and shortcuts
-            </CardDescription>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
