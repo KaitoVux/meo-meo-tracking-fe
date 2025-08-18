@@ -52,6 +52,21 @@ export const updateProfileSchema = z.object({
   email: z.string().email('Please enter a valid email address').optional(),
 })
 
+// Expense form validation schema
+export const expenseSchema = z.object({
+  date: z.string().min(1, 'Date is required'),
+  vendor: z.string().min(1, 'Vendor is required'),
+  category: z.string().min(1, 'Category is required'),
+  amount: z.number().min(0.01, 'Amount must be greater than 0'),
+  currency: z.enum(['VND', 'USD']),
+  exchangeRate: z.number().optional(),
+  description: z.string().min(1, 'Description is required'),
+  projectCostCenter: z.string().optional(),
+  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER']),
+  invoiceFileId: z.string().optional(),
+})
+
 export type LoginFormData = z.infer<typeof loginSchema>
 export type RegisterFormData = z.infer<typeof registerSchema>
 export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>
+export type ExpenseFormData = z.infer<typeof expenseSchema>

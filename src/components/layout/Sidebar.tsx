@@ -5,6 +5,7 @@ import {
   Upload,
   Settings,
   PlusCircle,
+  GitBranch,
 } from 'lucide-react'
 import React from 'react'
 import { NavLink } from 'react-router-dom'
@@ -21,6 +22,11 @@ const navigation = [
     name: 'Expenses',
     href: '/expenses',
     icon: Receipt,
+  },
+  {
+    name: 'Workflow',
+    href: '/workflow',
+    icon: GitBranch,
   },
   {
     name: 'Add Expense',

@@ -10,12 +10,13 @@ import { AuthProvider, ProtectedRoute } from './components/auth'
 import { DevPanel } from './components/dev/DevPanel'
 import { AppLayout } from './components/layout/AppLayout'
 import { Dashboard } from './pages/Dashboard'
+import { ExpensesPage } from './pages/ExpensesPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
+import { WorkflowPage } from './pages/WorkflowPage'
 
 // Placeholder components for other routes
-const Expenses = () => <div>Expenses Page - Coming Soon</div>
 const NewExpense = () => <div>New Expense Page - Coming Soon</div>
 const Reports = () => <div>Reports Page - Coming Soon</div>
 const Import = () => <div>Import Page - Coming Soon</div>
@@ -42,7 +43,8 @@ function App() {
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="expenses" element={<Expenses />} />
+            <Route path="expenses" element={<ExpensesPage />} />
+            <Route path="workflow" element={<WorkflowPage />} />
             <Route path="expenses/new" element={<NewExpense />} />
             <Route path="reports" element={<Reports />} />
             <Route path="import" element={<Import />} />
