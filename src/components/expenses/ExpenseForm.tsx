@@ -63,12 +63,19 @@ export function ExpenseForm({
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
-      date: expense?.date
-        ? new Date(expense.date).toISOString().split('T')[0]
+      transactionDate: expense?.transactionDate
+        ? new Date(expense.transactionDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
+      expenseMonth:
+        expense?.expenseMonth ||
+        new Date().toLocaleDateString('en-US', { month: 'long' }),
+      type: expense?.type || 'OUT',
       vendorId: expense?.vendor?.id || '',
       category: expense?.category || '',
       amount: expense?.amount || 0,
+      amountBeforeVAT: expense?.amountBeforeVAT || 0,
+      vatPercentage: expense?.vatPercentage,
+      vatAmount: expense?.vatAmount,
       currency: expense?.currency || 'VND',
       exchangeRate: expense?.exchangeRate,
       description: expense?.description || '',
@@ -156,13 +163,73 @@ export function ExpenseForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="date"
+                name="transactionDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>Transaction Date</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="expenseMonth"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expense Month</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select expense month" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="January">January</SelectItem>
+                        <SelectItem value="February">February</SelectItem>
+                        <SelectItem value="March">March</SelectItem>
+                        <SelectItem value="April">April</SelectItem>
+                        <SelectItem value="May">May</SelectItem>
+                        <SelectItem value="June">June</SelectItem>
+                        <SelectItem value="July">July</SelectItem>
+                        <SelectItem value="August">August</SelectItem>
+                        <SelectItem value="September">September</SelectItem>
+                        <SelectItem value="October">October</SelectItem>
+                        <SelectItem value="November">November</SelectItem>
+                        <SelectItem value="December">December</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expense Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select expense type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="OUT">Outgoing (OUT)</SelectItem>
+                        <SelectItem value="IN">Incoming (IN)</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -220,7 +287,7 @@ export function ExpenseForm({
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>Total Amount</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -230,6 +297,102 @@ export function ExpenseForm({
                         onChange={e =>
                           field.onChange(parseFloat(e.target.value) || 0)
                         }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="amountBeforeVAT"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount Before VAT</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={e => {
+                          const value = parseFloat(e.target.value) || 0
+                          field.onChange(value)
+
+                          // Auto-calculate VAT amount if percentage is set
+                          const vatPercentage = form.getValues('vatPercentage')
+                          if (vatPercentage) {
+                            const vatAmount = (value * vatPercentage) / 100
+                            form.setValue('vatAmount', vatAmount)
+                            form.setValue('amount', value + vatAmount)
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="vatPercentage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>VAT Percentage (%)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={e => {
+                          const percentage =
+                            parseFloat(e.target.value) || undefined
+                          field.onChange(percentage)
+
+                          // Auto-calculate VAT amount and total
+                          const amountBeforeVAT =
+                            form.getValues('amountBeforeVAT')
+                          if (percentage && amountBeforeVAT) {
+                            const vatAmount =
+                              (amountBeforeVAT * percentage) / 100
+                            form.setValue('vatAmount', vatAmount)
+                            form.setValue('amount', amountBeforeVAT + vatAmount)
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="vatAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>VAT Amount</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={e => {
+                          const vatAmount =
+                            parseFloat(e.target.value) || undefined
+                          field.onChange(vatAmount)
+
+                          // Auto-calculate total amount
+                          const amountBeforeVAT =
+                            form.getValues('amountBeforeVAT')
+                          if (vatAmount && amountBeforeVAT) {
+                            form.setValue('amount', amountBeforeVAT + vatAmount)
+                          }
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

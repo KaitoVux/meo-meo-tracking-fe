@@ -74,10 +74,15 @@ export interface VendorQueryParams {
 }
 
 export interface CreateExpenseRequest {
-  date: string
+  transactionDate: string
+  expenseMonth: string
+  type?: 'IN' | 'OUT'
   vendorId: string
   category: string
   amount: number
+  amountBeforeVAT: number
+  vatPercentage?: number
+  vatAmount?: number
   currency: 'VND' | 'USD'
   exchangeRate?: number
   description: string
@@ -88,10 +93,15 @@ export interface CreateExpenseRequest {
 }
 
 export interface UpdateExpenseRequest {
-  date?: string
+  transactionDate?: string
+  expenseMonth?: string
+  type?: 'IN' | 'OUT'
   vendorId?: string
   category?: string
   amount?: number
+  amountBeforeVAT?: number
+  vatPercentage?: number
+  vatAmount?: number
   currency?: 'VND' | 'USD'
   exchangeRate?: number
   description?: string
@@ -104,10 +114,15 @@ export interface Expense {
   id: string
   paymentId: string
   subId?: string
-  date: string
+  transactionDate: string
+  expenseMonth: string
+  type: 'IN' | 'OUT'
   vendor: Vendor
   category: string
   amount: number
+  amountBeforeVAT: number
+  vatPercentage?: number
+  vatAmount?: number
   currency: 'VND' | 'USD'
   exchangeRate?: number
   description: string

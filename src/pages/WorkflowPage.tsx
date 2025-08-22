@@ -267,7 +267,10 @@ export function WorkflowPage() {
                         Selected Expense: {selectedExpense.paymentId}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        {selectedExpense.vendor} •{' '}
+                        {typeof selectedExpense.vendor === 'string'
+                          ? selectedExpense.vendor
+                          : selectedExpense.vendor?.name || 'N/A'}{' '}
+                        •{' '}
                         {formatCurrency(
                           selectedExpense.amount,
                           selectedExpense.currency
@@ -331,8 +334,14 @@ export function WorkflowPage() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell>{formatDate(expense.date)}</TableCell>
-                      <TableCell>{expense.vendor}</TableCell>
+                      <TableCell>
+                        {formatDate(expense.transactionDate)}
+                      </TableCell>
+                      <TableCell>
+                        {typeof expense.vendor === 'string'
+                          ? expense.vendor
+                          : expense.vendor?.name || 'N/A'}
+                      </TableCell>
                       <TableCell>
                         {formatCurrency(expense.amount, expense.currency)}
                       </TableCell>

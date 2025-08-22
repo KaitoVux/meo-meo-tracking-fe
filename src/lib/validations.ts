@@ -81,10 +81,24 @@ export const vendorSchema = z.object({
 
 // Expense form validation schema
 export const expenseSchema = z.object({
-  date: z.string().min(1, 'Date is required'),
+  transactionDate: z.string().min(1, 'Transaction date is required'),
+  expenseMonth: z.string().min(1, 'Expense month is required'),
+  type: z.enum(['IN', 'OUT']).default('OUT').optional(),
   vendorId: z.string().min(1, 'Vendor is required'),
   category: z.string().min(1, 'Category is required'),
   amount: z.number().min(0.01, 'Amount must be greater than 0'),
+  amountBeforeVAT: z
+    .number()
+    .min(0.01, 'Amount before VAT must be greater than 0'),
+  vatPercentage: z
+    .number()
+    .min(0)
+    .max(100, 'VAT percentage must be between 0 and 100')
+    .optional(),
+  vatAmount: z
+    .number()
+    .min(0, 'VAT amount must be greater than or equal to 0')
+    .optional(),
   currency: z.enum(['VND', 'USD']),
   exchangeRate: z.number().optional(),
   description: z.string().min(1, 'Description is required'),

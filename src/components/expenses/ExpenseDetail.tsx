@@ -155,14 +155,18 @@ export function ExpenseDetail({
                   </span>
                   <div className="flex items-center mt-1">
                     <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>{formatDate(expense.date)}</span>
+                    <span>{formatDate(expense.transactionDate)}</span>
                   </div>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">
                     Vendor
                   </span>
-                  <p className="mt-1 font-medium">{expense.vendor}</p>
+                  <p className="mt-1 font-medium">
+                    {typeof expense.vendor === 'string'
+                      ? expense.vendor
+                      : expense.vendor?.name || 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">

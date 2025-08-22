@@ -104,7 +104,11 @@ export function ApprovalInterface({
           </div>
           <div>
             <Label className="text-sm font-medium text-gray-500">Vendor</Label>
-            <p className="font-medium">{expense.vendor}</p>
+            <p className="font-medium">
+              {typeof expense.vendor === 'string'
+                ? expense.vendor
+                : expense.vendor?.name || 'N/A'}
+            </p>
           </div>
           <div>
             <Label className="text-sm font-medium text-gray-500">
@@ -161,7 +165,11 @@ export function ApprovalInterface({
                   </div>
                   <p className="text-sm text-green-700">
                     Amount: {formatCurrency(expense.amount, expense.currency)} •
-                    Vendor: {expense.vendor} • Category: {expense.category}
+                    Vendor:{' '}
+                    {typeof expense.vendor === 'string'
+                      ? expense.vendor
+                      : expense.vendor?.name || 'N/A'}{' '}
+                    • Category: {expense.category}
                   </p>
                 </div>
 

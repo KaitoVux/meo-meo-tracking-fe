@@ -203,10 +203,14 @@ export function ExpenseList({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Payment ID</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Transaction Date</TableHead>
+                    <TableHead>Month</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Vendor</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Amount</TableHead>
+                    <TableHead>Amount Before VAT</TableHead>
+                    <TableHead>VAT</TableHead>
+                    <TableHead>Total Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Submitter</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -223,10 +227,51 @@ export function ExpenseList({
                           </span>
                         )}
                       </TableCell>
-                      <TableCell>{formatDate(expense.date)}</TableCell>
-                      <TableCell>{expense.vendor}</TableCell>
+                      <TableCell>
+                        {formatDate(expense.transactionDate)}
+                      </TableCell>
+                      <TableCell>{expense.expenseMonth}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            expense.type === 'IN' ? 'default' : 'secondary'
+                          }
+                        >
+                          {expense.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {typeof expense.vendor === 'string'
+                          ? expense.vendor
+                          : expense.vendor?.name || 'N/A'}
+                      </TableCell>
                       <TableCell>{expense.category}</TableCell>
                       <TableCell>
+                        {formatCurrency(
+                          expense.amountBeforeVAT,
+                          expense.currency
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {expense.vatAmount ? (
+                          <div className="text-sm">
+                            <div>
+                              {formatCurrency(
+                                expense.vatAmount,
+                                expense.currency
+                              )}
+                            </div>
+                            {expense.vatPercentage && (
+                              <div className="text-gray-500">
+                                ({expense.vatPercentage}%)
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">
                         {formatCurrency(expense.amount, expense.currency)}
                       </TableCell>
                       <TableCell>
