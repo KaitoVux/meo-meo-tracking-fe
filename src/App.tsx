@@ -14,6 +14,7 @@ import { ExpensesPage } from './pages/ExpensesPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
+import { VendorsPage } from './pages/VendorsPage'
 import { WorkflowPage } from './pages/WorkflowPage'
 
 // Placeholder components for other routes
@@ -44,6 +45,7 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="expenses" element={<ExpensesPage />} />
+            <Route path="vendors" element={<VendorsPage />} />
             <Route path="workflow" element={<WorkflowPage />} />
             <Route path="expenses/new" element={<NewExpense />} />
             <Route path="reports" element={<Reports />} />

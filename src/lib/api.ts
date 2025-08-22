@@ -31,9 +31,51 @@ export interface UpdateProfileRequest {
   email?: string
 }
 
+export interface Vendor {
+  id: string
+  name: string
+  contactInfo?: string
+  address?: string
+  taxId?: string
+  email?: string
+  phone?: string
+  status: 'ACTIVE' | 'INACTIVE'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateVendorRequest {
+  name: string
+  contactInfo?: string
+  address?: string
+  taxId?: string
+  email?: string
+  phone?: string
+  status?: 'ACTIVE' | 'INACTIVE'
+}
+
+export interface UpdateVendorRequest {
+  name?: string
+  contactInfo?: string
+  address?: string
+  taxId?: string
+  email?: string
+  phone?: string
+  status?: 'ACTIVE' | 'INACTIVE'
+}
+
+export interface VendorQueryParams {
+  search?: string
+  status?: 'ACTIVE' | 'INACTIVE'
+  page?: number
+  limit?: number
+  sortBy?: string
+  sortOrder?: 'ASC' | 'DESC'
+}
+
 export interface CreateExpenseRequest {
   date: string
-  vendor: string
+  vendorId: string
   category: string
   amount: number
   currency: 'VND' | 'USD'
@@ -47,7 +89,7 @@ export interface CreateExpenseRequest {
 
 export interface UpdateExpenseRequest {
   date?: string
-  vendor?: string
+  vendorId?: string
   category?: string
   amount?: number
   currency?: 'VND' | 'USD'
@@ -63,7 +105,7 @@ export interface Expense {
   paymentId: string
   subId?: string
   date: string
-  vendor: string
+  vendor: Vendor
   category: string
   amount: number
   currency: 'VND' | 'USD'
@@ -257,10 +299,73 @@ class ApiClient {
     return this.request('/categories')
   }
 
+  // Vendor endpoints
+  async createVendor(
+    vendorData: CreateVendorRequest
+  ): Promise<{ success: boolean; data: Vendor; message: string }> {
+    return this.request('/vendors', {
+      method: 'POST',
+      body: JSON.stringify(vendorData),
+    })
+  }
+
+  async getVendors(params?: VendorQueryParams): Promise<{
+    success: boolean
+    data: {
+      vendors: Vendor[]
+      total: number
+      page: number
+      limit: number
+    }
+  }> {
+    const searchParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString())
+        }
+      })
+    }
+    const queryString = searchParams.toString()
+    return this.request(`/vendors${queryString ? `?${queryString}` : ''}`)
+  }
+
+  async getActiveVendors(): Promise<{ success: boolean; data: Vendor[] }> {
+    return this.request('/vendors/active')
+  }
+
+  async getVendor(id: string): Promise<{ success: boolean; data: Vendor }> {
+    return this.request(`/vendors/${id}`)
+  }
+
+  async updateVendor(
+    id: string,
+    vendorData: UpdateVendorRequest
+  ): Promise<{ success: boolean; data: Vendor; message: string }> {
+    return this.request(`/vendors/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(vendorData),
+    })
+  }
+
+  async toggleVendorStatus(
+    id: string
+  ): Promise<{ success: boolean; data: Vendor; message: string }> {
+    return this.request(`/vendors/${id}/toggle-status`, {
+      method: 'PATCH',
+    })
+  }
+
+  async deleteVendor(
+    id: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request(`/vendors/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   // File upload endpoints
-  async uploadFile(
-    file: File
-  ): Promise<{
+  async uploadFile(file: File): Promise<{
     success: boolean
     data: {
       id: string

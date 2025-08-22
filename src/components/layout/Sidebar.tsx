@@ -6,6 +6,7 @@ import {
   Settings,
   PlusCircle,
   GitBranch,
+  Building2,
 } from 'lucide-react'
 import React from 'react'
 import { NavLink } from 'react-router-dom'
@@ -22,6 +23,11 @@ const navigation = [
     name: 'Expenses',
     href: '/expenses',
     icon: Receipt,
+  },
+  {
+    name: 'Vendors',
+    href: '/vendors',
+    icon: Building2,
   },
   {
     name: 'Workflow',

@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { VendorSelect } from '@/components/vendors'
 import { apiClient, type Category, type Expense } from '@/lib/api'
 import { expenseSchema, type ExpenseFormData } from '@/lib/validations'
 
@@ -65,7 +66,7 @@ export function ExpenseForm({
       date: expense?.date
         ? new Date(expense.date).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
-      vendor: expense?.vendor || '',
+      vendorId: expense?.vendor?.id || '',
       category: expense?.category || '',
       amount: expense?.amount || 0,
       currency: expense?.currency || 'VND',
@@ -169,12 +170,17 @@ export function ExpenseForm({
 
               <FormField
                 control={form.control}
-                name="vendor"
+                name="vendorId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Vendor</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter vendor name" {...field} />
+                      <VendorSelect
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Select a vendor"
+                        disabled={isLoading}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
