@@ -41,7 +41,7 @@ export function VendorForm({ vendor, onSubmit, onCancel }: VendorFormProps) {
       taxId: vendor?.taxId || '',
       email: vendor?.email || '',
       phone: vendor?.phone || '',
-      status: vendor?.status || 'ACTIVE',
+      status: (vendor?.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
     },
   })
 

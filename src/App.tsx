@@ -9,6 +9,7 @@ import {
 import { AuthProvider, ProtectedRoute } from './components/auth'
 import { DevPanel } from './components/dev/DevPanel'
 import { AppLayout } from './components/layout/AppLayout'
+import { CategoriesPage } from './pages/CategoriesPage'
 import { Dashboard } from './pages/Dashboard'
 import { ExpensesPage } from './pages/ExpensesPage'
 import { LoginPage } from './pages/LoginPage'
@@ -46,6 +47,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="expenses" element={<ExpensesPage />} />
             <Route path="vendors" element={<VendorsPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
             <Route path="workflow" element={<WorkflowPage />} />
             <Route path="expenses/new" element={<NewExpense />} />
             <Route path="reports" element={<Reports />} />

@@ -61,12 +61,14 @@ export const vendorSchema = z.object({
   contactInfo: z
     .string()
     .max(500, 'Contact info must be less than 500 characters')
-    .optional(),
-  address: z.string().optional(),
+    .optional()
+    .or(z.literal('')),
+  address: z.string().optional().or(z.literal('')),
   taxId: z
     .string()
     .max(50, 'Tax ID must be less than 50 characters')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
   email: z
     .string()
     .email('Please enter a valid email address')
@@ -75,8 +77,9 @@ export const vendorSchema = z.object({
   phone: z
     .string()
     .max(20, 'Phone number must be less than 20 characters')
-    .optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+    .optional()
+    .or(z.literal('')),
+  status: z.enum(['ACTIVE', 'INACTIVE']),
 })
 
 // Expense form validation schema
@@ -107,8 +110,31 @@ export const expenseSchema = z.object({
   invoiceFileId: z.string().optional(),
 })
 
+// Category form validation schema
+export const categorySchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Category name must be at least 2 characters')
+    .max(100, 'Category name cannot exceed 100 characters'),
+  code: z
+    .string()
+    .min(2, 'Category code must be at least 2 characters')
+    .max(20, 'Category code cannot exceed 20 characters')
+    .regex(
+      /^[A-Z0-9_]+$/,
+      'Code must contain only uppercase letters, numbers, and underscores'
+    ),
+  description: z
+    .string()
+    .max(500, 'Description cannot exceed 500 characters')
+    .optional()
+    .or(z.literal('')),
+  isActive: z.boolean(),
+})
+
 export type LoginFormData = z.infer<typeof loginSchema>
 export type RegisterFormData = z.infer<typeof registerSchema>
 export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>
 export type VendorFormData = z.infer<typeof vendorSchema>
 export type ExpenseFormData = z.infer<typeof expenseSchema>
+export type CategoryFormData = z.infer<typeof categorySchema>

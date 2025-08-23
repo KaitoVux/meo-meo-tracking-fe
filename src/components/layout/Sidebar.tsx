@@ -7,6 +7,7 @@ import {
   PlusCircle,
   GitBranch,
   Building2,
+  FolderTree,
 } from 'lucide-react'
 import React from 'react'
 import { NavLink } from 'react-router-dom'
@@ -28,6 +29,11 @@ const navigation = [
     name: 'Vendors',
     href: '/vendors',
     icon: Building2,
+  },
+  {
+    name: 'Categories',
+    href: '/categories',
+    icon: FolderTree,
   },
   {
     name: 'Workflow',

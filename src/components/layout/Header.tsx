@@ -2,7 +2,6 @@ import { Moon, Sun, User, LogOut } from 'lucide-react'
 import React from 'react'
 
 import { Button } from '@/components/ui/button'
-import { NotificationCenter } from '@/components/workflow'
 import { useAuthStore } from '@/store/auth'
 
 export function Header() {
@@ -40,7 +39,7 @@ export function Header() {
 
           {user && (
             <>
-              <NotificationCenter />
+              {/* <NotificationCenter /> */}
 
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4" />

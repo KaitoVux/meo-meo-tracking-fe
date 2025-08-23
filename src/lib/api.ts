@@ -174,6 +174,34 @@ export interface Category {
   code: string
   description?: string
   isActive: boolean
+  parentId?: string
+  parent?: Category
+  children?: Category[]
+  usageCount?: number
+  createdAt: string
+  updatedAt: string
+  createdBy?: string
+  updatedBy?: string
+}
+
+export interface CreateCategoryRequest {
+  name: string
+  code: string
+  description?: string
+  isActive?: boolean
+  parentId?: string
+}
+
+export interface UpdateCategoryRequest {
+  name?: string
+  code?: string
+  description?: string
+  isActive?: boolean
+  parentId?: string
+}
+
+export interface CategoryQueryParams {
+  includeInactive?: boolean
 }
 
 class ApiClient {
@@ -310,8 +338,69 @@ class ApiClient {
   }
 
   // Category endpoints
-  async getCategories(): Promise<{ success: boolean; data: Category[] }> {
-    return this.request('/categories')
+  async getCategories(
+    params?: CategoryQueryParams
+  ): Promise<{ success: boolean; data: Category[] }> {
+    const searchParams = new URLSearchParams()
+    if (params?.includeInactive) {
+      searchParams.append('includeInactive', 'true')
+    }
+    const queryString = searchParams.toString()
+    return this.request(`/categories${queryString ? `?${queryString}` : ''}`)
+  }
+
+  async getCategory(id: string): Promise<{ success: boolean; data: Category }> {
+    return this.request(`/categories/${id}`)
+  }
+
+  async createCategory(
+    categoryData: CreateCategoryRequest
+  ): Promise<{ success: boolean; data: Category; message: string }> {
+    return this.request('/categories', {
+      method: 'POST',
+      body: JSON.stringify(categoryData),
+    })
+  }
+
+  async updateCategory(
+    id: string,
+    categoryData: UpdateCategoryRequest
+  ): Promise<{ success: boolean; data: Category; message: string }> {
+    return this.request(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(categoryData),
+    })
+  }
+
+  async updateCategoryStatus(
+    id: string,
+    isActive: boolean
+  ): Promise<{ success: boolean; data: Category; message: string }> {
+    return this.request(`/categories/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ isActive }),
+    })
+  }
+
+  async deleteCategory(
+    id: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request(`/categories/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getCategoryUsage(
+    id: string
+  ): Promise<{
+    success: boolean
+    data: { categoryId: string; usageCount: number }
+  }> {
+    return this.request(`/categories/${id}/usage`)
+  }
+
+  async getCategoryStatistics(): Promise<{ success: boolean; data: any }> {
+    return this.request('/categories/statistics')
   }
 
   // Vendor endpoints
