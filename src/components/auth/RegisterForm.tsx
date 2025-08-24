@@ -29,18 +29,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { apiClient } from '@/lib/api'
+import { useRegisterMutation } from '@/hooks/useAuth'
 import { registerSchema, type RegisterFormData } from '@/lib/validations'
 import { useAuthStore } from '@/store/auth'
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const navigate = useNavigate()
   const login = useAuthStore(state => state.login)
+
+  // TanStack Query mutation for registration
+  const registerMutation = useRegisterMutation()
 
   const form = useForm({
     resolver: zodResolver(registerSchema),
@@ -54,32 +55,23 @@ export function RegisterForm() {
     },
   })
 
-  const onSubmit = async (data: RegisterFormData) => {
-    setIsLoading(true)
-    setError(null)
+  const onSubmit = (data: RegisterFormData) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { confirmPassword, ...registerData } = data
 
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { confirmPassword, ...registerData } = data
-      const response = await apiClient.register(registerData)
+    registerMutation.mutate(registerData, {
+      onSuccess: response => {
+        // Update auth store - the mutation already handles setting the token
+        login(response.user, response.access_token)
 
-      // Set token for future requests
-      apiClient.setToken(response.access_token)
-
-      // Update auth store
-      login(response.user, response.access_token)
-
-      // Navigate to dashboard
-      navigate('/dashboard')
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Registration failed. Please try again.'
-      )
-    } finally {
-      setIsLoading(false)
-    }
+        // Navigate to dashboard
+        navigate('/dashboard')
+      },
+      onError: error => {
+        console.error('Registration failed:', error)
+        // Error state is handled by the mutation
+      },
+    })
   }
 
   return (
@@ -96,9 +88,12 @@ export function RegisterForm() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
+              {registerMutation.error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {registerMutation.error.message ||
+                      'Registration failed. Please try again.'}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -113,7 +108,7 @@ export function RegisterForm() {
                         <Input
                           placeholder="John"
                           {...field}
-                          disabled={isLoading}
+                          disabled={registerMutation.isPending}
                         />
                       </FormControl>
                       <FormMessage />
@@ -131,7 +126,7 @@ export function RegisterForm() {
                         <Input
                           placeholder="Doe"
                           {...field}
-                          disabled={isLoading}
+                          disabled={registerMutation.isPending}
                         />
                       </FormControl>
                       <FormMessage />
@@ -151,7 +146,7 @@ export function RegisterForm() {
                         type="email"
                         placeholder="john.doe@example.com"
                         {...field}
-                        disabled={isLoading}
+                        disabled={registerMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -168,7 +163,7 @@ export function RegisterForm() {
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      disabled={isLoading}
+                      disabled={registerMutation.isPending}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -197,7 +192,7 @@ export function RegisterForm() {
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Create a password"
                           {...field}
-                          disabled={isLoading}
+                          disabled={registerMutation.isPending}
                           className="pr-10"
                         />
                         <Button
@@ -206,7 +201,7 @@ export function RegisterForm() {
                           size="sm"
                           className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() => setShowPassword(!showPassword)}
-                          disabled={isLoading}
+                          disabled={registerMutation.isPending}
                         >
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -233,7 +228,7 @@ export function RegisterForm() {
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="Confirm your password"
                           {...field}
-                          disabled={isLoading}
+                          disabled={registerMutation.isPending}
                           className="pr-10"
                         />
                         <Button
@@ -244,7 +239,7 @@ export function RegisterForm() {
                           onClick={() =>
                             setShowConfirmPassword(!showConfirmPassword)
                           }
-                          disabled={isLoading}
+                          disabled={registerMutation.isPending}
                         >
                           {showConfirmPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -259,8 +254,12 @@ export function RegisterForm() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={registerMutation.isPending}
+              >
+                {registerMutation.isPending ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
                     Creating account...

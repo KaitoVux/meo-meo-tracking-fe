@@ -1,5 +1,5 @@
 import { Search, Plus, Eye, Edit, Trash2 } from 'lucide-react'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,12 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  apiClient,
-  type Expense,
-  type ExpenseQueryParams,
-  type Category,
-} from '@/lib/api'
+import { useCategoriesQuery } from '@/hooks/useCategories'
+import { useExpensesQuery } from '@/hooks/useExpenses'
+import type { Expense, ExpenseQueryParams } from '@/lib/api'
 
 interface ExpenseListProps {
   onCreateExpense: () => void
@@ -56,49 +53,30 @@ export function ExpenseList({
   onViewExpense,
   onDeleteExpense,
 }: ExpenseListProps) {
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 25,
-    total: 0,
-    totalPages: 0,
-  })
   const [filters, setFilters] = useState<ExpenseQueryParams>({
     page: 1,
     limit: 25,
   })
 
-  const loadExpenses = async () => {
-    try {
-      setLoading(true)
-      const response = await apiClient.getExpenses(filters)
-      setExpenses(response.data)
-      setPagination(response.pagination)
-    } catch (error) {
-      console.error('Failed to load expenses:', error)
-    } finally {
-      setLoading(false)
-    }
+  // TanStack Query hooks - much simpler than manual state management!
+  const {
+    data: expensesResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useExpensesQuery(filters)
+
+  const { data: categoriesResponse } = useCategoriesQuery()
+
+  // Extract data with fallbacks
+  const expenses = expensesResponse?.data || []
+  const pagination = expensesResponse?.pagination || {
+    page: 1,
+    limit: 25,
+    total: 0,
+    totalPages: 0,
   }
-
-  const loadCategories = async () => {
-    try {
-      const response = await apiClient.getCategories()
-      setCategories(response.data)
-    } catch (error) {
-      console.error('Failed to load categories:', error)
-    }
-  }
-
-  useEffect(() => {
-    loadExpenses()
-  }, [filters, loadExpenses])
-
-  useEffect(() => {
-    loadCategories()
-  }, [])
+  const categories = categoriesResponse?.data || []
 
   const handleSearch = (search: string) => {
     setFilters(prev => ({ ...prev, search, page: 1 }))
@@ -191,8 +169,17 @@ export function ExpenseList({
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-8">Loading expenses...</div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500 mb-4">
+                Error loading expenses: {error.message}
+              </p>
+              <Button onClick={() => refetch()} variant="outline">
+                Try Again
+              </Button>
+            </div>
           ) : expenses.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No expenses found. Create your first expense to get started.

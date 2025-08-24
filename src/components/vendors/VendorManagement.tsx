@@ -7,7 +7,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 
 import { VendorDeleteDialog } from './VendorDeleteDialog'
 import { VendorForm } from './VendorForm'
@@ -43,18 +43,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { apiClient, type Vendor } from '@/lib/api'
+import {
+  useVendorsQuery,
+  useToggleVendorStatusMutation,
+} from '@/hooks/useVendors'
+import type { Vendor } from '@/lib/api'
 
 export function VendorManagement() {
-  const [vendors, setVendors] = useState<Vendor[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<
     'ALL' | 'ACTIVE' | 'INACTIVE'
   >('ALL')
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalVendors, setTotalVendors] = useState(0)
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -62,34 +62,30 @@ export function VendorManagement() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
 
-  const fetchVendors = useCallback(async () => {
-    try {
-      setLoading(true)
-      const params = {
-        search: searchTerm || undefined,
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
-        page: currentPage,
-        limit: 20,
-        sortBy: 'name',
-        sortOrder: 'ASC' as const,
-      }
+  // TanStack Query hooks - much simpler than manual state management!
+  const {
+    data: vendorsResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useVendorsQuery({
+    search: searchTerm || undefined,
+    status: statusFilter === 'ALL' ? undefined : statusFilter,
+    page: currentPage,
+    limit: 20,
+    sortBy: 'name',
+    sortOrder: 'ASC',
+  })
 
-      const response = await apiClient.getVendors(params)
-      if (response.success) {
-        setVendors(response.data.vendors)
-        setTotalVendors(response.data.total)
-        setTotalPages(Math.ceil(response.data.total / response.data.limit))
-      }
-    } catch (error) {
-      console.error('Failed to fetch vendors:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [searchTerm, statusFilter, currentPage])
+  // Mutations for vendor operations
+  const toggleStatusMutation = useToggleVendorStatusMutation()
 
-  useEffect(() => {
-    fetchVendors()
-  }, [fetchVendors])
+  // Extract data with fallbacks
+  const vendors = vendorsResponse?.data?.vendors || []
+  const totalVendors = vendorsResponse?.data?.total || 0
+  const totalPages = Math.ceil(totalVendors / 20)
+
+  // No more manual fetching functions needed! TanStack Query handles everything.
 
   const handleCreateVendor = () => {
     setSelectedVendor(null)
@@ -106,28 +102,25 @@ export function VendorManagement() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleToggleStatus = async (vendor: Vendor) => {
-    try {
-      const response = await apiClient.toggleVendorStatus(vendor.id)
-      if (response.success) {
-        fetchVendors()
-      }
-    } catch (error) {
-      console.error('Failed to toggle vendor status:', error)
-    }
+  const handleToggleStatus = (vendor: Vendor) => {
+    toggleStatusMutation.mutate(vendor.id, {
+      onError: error => {
+        console.error('Failed to toggle vendor status:', error)
+      },
+    })
   }
 
   const handleVendorSaved = () => {
     setIsCreateDialogOpen(false)
     setIsEditDialogOpen(false)
     setSelectedVendor(null)
-    fetchVendors()
+    // Query cache will automatically update!
   }
 
   const handleVendorDeleted = () => {
     setIsDeleteDialogOpen(false)
     setSelectedVendor(null)
-    fetchVendors()
+    // Query cache will automatically update!
   }
 
   const getStatusBadge = (status: string) => {
@@ -196,7 +189,23 @@ export function VendorManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">
+                Error loading vendors: {error.message}
+              </p>
+              <Button
+                onClick={() => refetch()}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                Try Again
+              </Button>
+            </div>
+          )}
+
+          {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-muted-foreground">Loading vendors...</div>
             </div>

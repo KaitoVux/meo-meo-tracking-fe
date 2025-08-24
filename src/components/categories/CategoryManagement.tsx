@@ -9,9 +9,8 @@ import {
   ToggleRight,
   Eye,
 } from 'lucide-react'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState } from 'react'
 
-import { apiClient } from '../../lib/api'
 import type {
   Category,
   CreateCategoryRequest,
@@ -54,10 +53,16 @@ import {
 import { CategoryDeleteDialog } from './CategoryDeleteDialog'
 import { CategoryForm } from './CategoryForm'
 
+import {
+  useCategoriesQuery,
+  useCategoryUsageQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useUpdateCategoryStatusMutation,
+  useDeleteCategoryMutation,
+} from '@/hooks/useCategories'
+
 export const CategoryManagement: React.FC = () => {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [includeInactive, setIncludeInactive] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -67,90 +72,106 @@ export const CategoryManagement: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isUsageDialogOpen, setIsUsageDialogOpen] = useState(false)
-  const [categoryUsage, setCategoryUsage] = useState<number | null>(null)
 
-  const fetchCategories = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await apiClient.getCategories({ includeInactive })
-      setCategories(response.data)
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to fetch categories'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }, [includeInactive])
+  // TanStack Query hooks - much simpler than manual state management!
+  const {
+    data: categoriesResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useCategoriesQuery({ includeInactive })
 
-  const fetchCategoryUsage = async (categoryId: string) => {
-    try {
-      const response = await apiClient.getCategoryUsage(categoryId)
-      setCategoryUsage(response.data.usageCount)
-    } catch (err) {
-      console.error('Failed to fetch category usage:', err)
-      setCategoryUsage(null)
-    }
-  }
+  const { data: categoryUsageResponse, isLoading: usageLoading } =
+    useCategoryUsageQuery(selectedCategory?.id || '', {
+      enabled: !!selectedCategory?.id && isUsageDialogOpen,
+    })
 
-  useEffect(() => {
-    fetchCategories()
-  }, [fetchCategories])
+  // Mutations for category operations
+  const createCategoryMutation = useCreateCategoryMutation()
+  const updateCategoryMutation = useUpdateCategoryMutation()
+  const updateStatusMutation = useUpdateCategoryStatusMutation()
+  const deleteCategoryMutation = useDeleteCategoryMutation()
 
-  const handleCreateCategory = async (categoryData: CategoryFormData) => {
+  // Extract data with fallbacks
+  const categories = categoriesResponse?.data || []
+  const categoryUsage = categoryUsageResponse?.data?.usageCount || null
+
+  // No more manual fetching functions needed! TanStack Query handles everything.
+
+  const handleCreateCategory = (categoryData: CategoryFormData) => {
     const createData: CreateCategoryRequest = {
       name: categoryData.name,
       code: categoryData.code,
       description: categoryData.description || undefined,
       isActive: categoryData.isActive,
     }
-    await apiClient.createCategory(createData)
-    setIsCreateDialogOpen(false)
-    fetchCategories()
+
+    createCategoryMutation.mutate(createData, {
+      onSuccess: () => {
+        setIsCreateDialogOpen(false)
+        // Query cache will automatically update!
+      },
+      onError: error => {
+        console.error('Failed to create category:', error)
+      },
+    })
   }
 
-  const handleUpdateCategory = async (categoryData: CategoryFormData) => {
+  const handleUpdateCategory = (categoryData: CategoryFormData) => {
     if (!selectedCategory) return
+
     const updateData: UpdateCategoryRequest = {
       name: categoryData.name,
       code: categoryData.code,
       description: categoryData.description || undefined,
       isActive: categoryData.isActive,
     }
-    await apiClient.updateCategory(selectedCategory.id, updateData)
-    setIsEditDialogOpen(false)
-    setSelectedCategory(null)
-    fetchCategories()
+
+    updateCategoryMutation.mutate(
+      { id: selectedCategory.id, data: updateData },
+      {
+        onSuccess: () => {
+          setIsEditDialogOpen(false)
+          setSelectedCategory(null)
+          // Query cache will automatically update!
+        },
+        onError: error => {
+          console.error('Failed to update category:', error)
+        },
+      }
+    )
   }
 
-  const handleToggleStatus = async (category: Category) => {
-    try {
-      await apiClient.updateCategoryStatus(category.id, !category.isActive)
-      fetchCategories()
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to update category status'
-      )
-    }
+  const handleToggleStatus = (category: Category) => {
+    updateStatusMutation.mutate(
+      { id: category.id, isActive: !category.isActive },
+      {
+        onError: error => {
+          console.error('Failed to toggle category status:', error)
+        },
+      }
+    )
   }
 
-  const handleDeleteCategory = async () => {
+  const handleDeleteCategory = () => {
     if (!selectedCategory) return
-    try {
-      await apiClient.deleteCategory(selectedCategory.id)
-      setIsDeleteDialogOpen(false)
-      setSelectedCategory(null)
-      fetchCategories()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete category')
-    }
+
+    deleteCategoryMutation.mutate(selectedCategory.id, {
+      onSuccess: () => {
+        setIsDeleteDialogOpen(false)
+        setSelectedCategory(null)
+        // Query cache will automatically update!
+      },
+      onError: error => {
+        console.error('Failed to delete category:', error)
+      },
+    })
   }
 
-  const handleViewUsage = async (category: Category) => {
+  const handleViewUsage = (category: Category) => {
     setSelectedCategory(category)
-    await fetchCategoryUsage(category.id)
     setIsUsageDialogOpen(true)
+    // Usage data will be fetched automatically by the query hook!
   }
 
   const filteredCategories = categories.filter(
@@ -252,11 +273,21 @@ export const CategoryManagement: React.FC = () => {
 
           {error && (
             <Alert className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error.message || 'An error occurred'}
+                <Button
+                  onClick={() => refetch()}
+                  variant="outline"
+                  size="sm"
+                  className="ml-2"
+                >
+                  Try Again
+                </Button>
+              </AlertDescription>
             </Alert>
           )}
 
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-muted-foreground">Loading categories...</div>
             </div>
@@ -444,9 +475,11 @@ export const CategoryManagement: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="font-medium">Usage Count:</span>
                 <Badge variant="default">
-                  {categoryUsage !== null
-                    ? `${categoryUsage} expenses`
-                    : 'Loading...'}
+                  {usageLoading
+                    ? 'Loading...'
+                    : categoryUsage !== null
+                      ? `${categoryUsage} expenses`
+                      : 'No data'}
                 </Badge>
               </div>
               {selectedCategory.description && (

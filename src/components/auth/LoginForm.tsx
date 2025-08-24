@@ -22,17 +22,18 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { apiClient } from '@/lib/api'
+import { useLoginMutation } from '@/hooks/useAuth'
 import { loginSchema, type LoginFormData } from '@/lib/validations'
 import { useAuthStore } from '@/store/auth'
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const navigate = useNavigate()
   const login = useAuthStore(state => state.login)
+
+  // TanStack Query mutation for login
+  const loginMutation = useLoginMutation()
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -42,28 +43,20 @@ export function LoginForm() {
     },
   })
 
-  const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true)
-    setError(null)
+  const onSubmit = (data: LoginFormData) => {
+    loginMutation.mutate(data, {
+      onSuccess: response => {
+        // Update auth store - the mutation already handles setting the token
+        login(response.user, response.access_token)
 
-    try {
-      const response = await apiClient.login(data)
-
-      // Set token for future requests
-      apiClient.setToken(response.access_token)
-
-      // Update auth store
-      login(response.user, response.access_token)
-
-      // Navigate to dashboard
-      navigate('/dashboard')
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Login failed. Please try again.'
-      )
-    } finally {
-      setIsLoading(false)
-    }
+        // Navigate to dashboard
+        navigate('/dashboard')
+      },
+      onError: error => {
+        console.error('Login failed:', error)
+        // Error state is handled by the mutation
+      },
+    })
   }
 
   return (
@@ -80,9 +73,12 @@ export function LoginForm() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
+              {loginMutation.error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {loginMutation.error.message ||
+                      'Login failed. Please try again.'}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -97,7 +93,7 @@ export function LoginForm() {
                         type="email"
                         placeholder="Enter your email"
                         {...field}
-                        disabled={isLoading}
+                        disabled={loginMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -117,7 +113,7 @@ export function LoginForm() {
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Enter your password"
                           {...field}
-                          disabled={isLoading}
+                          disabled={loginMutation.isPending}
                           className="pr-10"
                         />
                         <Button
@@ -126,7 +122,7 @@ export function LoginForm() {
                           size="sm"
                           className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() => setShowPassword(!showPassword)}
-                          disabled={isLoading}
+                          disabled={loginMutation.isPending}
                         >
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -141,8 +137,12 @@ export function LoginForm() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loginMutation.isPending}
+              >
+                {loginMutation.isPending ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
                     Signing in...

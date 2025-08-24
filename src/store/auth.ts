@@ -81,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
+        // This method is now simplified since TanStack Query handles the profile fetching
         const { token, isMockMode } = get()
 
         // Auto-login with mock user in development if no existing auth
@@ -94,28 +95,12 @@ export const useAuthStore = create<AuthState>()(
           return
         }
 
-        // Skip API call if in mock mode
-        if (isMockMode) {
-          return
-        }
-
-        if (!token) {
-          return
-        }
-
-        set({ isLoading: true })
-
-        try {
+        // Set the token in API client if we have one
+        if (token) {
           apiClient.setToken(token)
-          const user = await apiClient.getProfile()
-          set({ user, isAuthenticated: true })
-        } catch (error) {
-          // Token is invalid, clear auth
-          console.error('Auth check failed:', error)
-          get().clearAuth()
-        } finally {
-          set({ isLoading: false })
         }
+
+        // TanStack Query will handle the actual profile fetching and error handling
       },
     }),
     {

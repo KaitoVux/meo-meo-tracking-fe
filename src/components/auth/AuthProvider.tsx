@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 
 import { isDevelopment } from '@/config/development'
+import { useProfileQuery } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/auth'
 
 interface AuthProviderProps {
@@ -8,12 +9,56 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { checkAuth, isLoading, isMockMode } = useAuthStore()
+  const {
+    token,
+    isAuthenticated,
+    isMockMode,
+    login,
+    clearAuth,
+    loginWithMockUser,
+    isLoading: authStoreLoading,
+  } = useAuthStore()
+
+  // TanStack Query for profile data - only when we have a token and not in mock mode
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useProfileQuery({
+    enabled: !!token && !isMockMode && isAuthenticated,
+    retry: false, // Don't retry on auth failures
+  })
+
+  const isLoading =
+    authStoreLoading || (!!token && !isMockMode && profileLoading)
 
   useEffect(() => {
-    // Check authentication status on app load
-    checkAuth()
-  }, [checkAuth])
+    // Auto-login with mock user in development if no existing auth
+    if (isDevelopment && !token && !isMockMode) {
+      loginWithMockUser()
+      return
+    }
+
+    // If we have a token but no profile data and not in mock mode, the query will handle fetching
+    // If profile query fails, clear auth
+    if (profileError && token && !isMockMode) {
+      console.error('Auth check failed:', profileError)
+      clearAuth()
+    }
+
+    // Sync profile data with auth store when it loads
+    if (profileData && token && !isMockMode) {
+      login(profileData, token)
+    }
+  }, [
+    token,
+    isMockMode,
+    profileData,
+    profileError,
+    login,
+    clearAuth,
+    loginWithMockUser,
+  ])
 
   // Show loading spinner while checking auth
   if (isLoading) {

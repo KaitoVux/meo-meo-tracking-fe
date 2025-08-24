@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { apiClient } from '@/lib/api'
+import { useUpdateProfileMutation } from '@/hooks/useAuth'
 import {
   updateProfileSchema,
   type UpdateProfileFormData,
@@ -29,11 +29,12 @@ import {
 import { useAuthStore } from '@/store/auth'
 
 export function ProfileForm() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
   const { user, updateUser } = useAuthStore()
+
+  // TanStack Query mutation for profile updates
+  const updateProfileMutation = useUpdateProfileMutation()
 
   const form = useForm<UpdateProfileFormData>({
     resolver: zodResolver(updateProfileSchema),
@@ -55,46 +56,39 @@ export function ProfileForm() {
     }
   }, [user, form])
 
-  const onSubmit = async (data: UpdateProfileFormData) => {
-    setIsLoading(true)
-    setError(null)
+  const onSubmit = (data: UpdateProfileFormData) => {
     setSuccess(null)
 
-    try {
-      // Only send fields that have changed
-      const changedFields: Partial<UpdateProfileFormData> = {}
+    // Only send fields that have changed
+    const changedFields: Partial<UpdateProfileFormData> = {}
 
-      if (data.firstName !== user?.firstName) {
-        changedFields.firstName = data.firstName
-      }
-      if (data.lastName !== user?.lastName) {
-        changedFields.lastName = data.lastName
-      }
-      if (data.email !== user?.email) {
-        changedFields.email = data.email
-      }
-
-      // If no fields changed, show message
-      if (Object.keys(changedFields).length === 0) {
-        setSuccess('No changes to save')
-        return
-      }
-
-      const updatedUser = await apiClient.updateProfile(changedFields)
-
-      // Update auth store with new user data
-      updateUser(updatedUser)
-
-      setSuccess('Profile updated successfully')
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to update profile. Please try again.'
-      )
-    } finally {
-      setIsLoading(false)
+    if (data.firstName !== user?.firstName) {
+      changedFields.firstName = data.firstName
     }
+    if (data.lastName !== user?.lastName) {
+      changedFields.lastName = data.lastName
+    }
+    if (data.email !== user?.email) {
+      changedFields.email = data.email
+    }
+
+    // If no fields changed, show message
+    if (Object.keys(changedFields).length === 0) {
+      setSuccess('No changes to save')
+      return
+    }
+
+    updateProfileMutation.mutate(changedFields, {
+      onSuccess: updatedUser => {
+        // Update auth store with new user data
+        updateUser(updatedUser)
+        setSuccess('Profile updated successfully')
+      },
+      onError: error => {
+        console.error('Failed to update profile:', error)
+        // Error state is handled by the mutation
+      },
+    })
   }
 
   if (!user) {
@@ -123,9 +117,12 @@ export function ProfileForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
+            {updateProfileMutation.error && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {updateProfileMutation.error.message ||
+                    'Failed to update profile. Please try again.'}
+                </AlertDescription>
               </Alert>
             )}
 
@@ -146,7 +143,7 @@ export function ProfileForm() {
                       <Input
                         placeholder="Enter your first name"
                         {...field}
-                        disabled={isLoading}
+                        disabled={updateProfileMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -164,7 +161,7 @@ export function ProfileForm() {
                       <Input
                         placeholder="Enter your last name"
                         {...field}
-                        disabled={isLoading}
+                        disabled={updateProfileMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -184,7 +181,7 @@ export function ProfileForm() {
                       type="email"
                       placeholder="Enter your email"
                       {...field}
-                      disabled={isLoading}
+                      disabled={updateProfileMutation.isPending}
                     />
                   </FormControl>
                   <FormMessage />
@@ -203,8 +200,8 @@ export function ProfileForm() {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" disabled={updateProfileMutation.isPending}>
+                {updateProfileMutation.isPending ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
                     Saving...

@@ -24,26 +24,33 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { VendorSelect } from '@/components/vendors'
-import { apiClient, type Category, type Expense } from '@/lib/api'
+import { useCategoriesQuery } from '@/hooks/useCategories'
+import {
+  useCreateExpenseMutation,
+  useUpdateExpenseMutation,
+} from '@/hooks/useExpenses'
+import { useUploadFileMutation } from '@/hooks/useFiles'
+import type { Expense } from '@/lib/api'
 import { expenseSchema, type ExpenseFormData } from '@/lib/validations'
 
 interface ExpenseFormProps {
   expense?: Expense
-  categories: Category[]
-  onSubmit: (
-    data: ExpenseFormData & { invoiceFileId?: string }
-  ) => Promise<void>
+  onSubmit?: (expense: Expense) => void // Changed to return the created/updated expense
   onCancel: () => void
-  isLoading?: boolean
 }
 
-export function ExpenseForm({
-  expense,
-  categories,
-  onSubmit,
-  onCancel,
-  isLoading = false,
-}: ExpenseFormProps) {
+export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
+  // TanStack Query hooks for data and mutations
+  const { data: categoriesResponse, isLoading: categoriesLoading } =
+    useCategoriesQuery()
+  const createExpenseMutation = useCreateExpenseMutation()
+  const updateExpenseMutation = useUpdateExpenseMutation()
+  const uploadFileMutation = useUploadFileMutation()
+
+  // Extract data with fallbacks
+  const categories = categoriesResponse?.data || []
+  const isLoading =
+    createExpenseMutation.isPending || updateExpenseMutation.isPending
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadedFile, setUploadedFile] = useState<{
     id: string
@@ -84,37 +91,44 @@ export function ExpenseForm({
     },
   })
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0]
-    if (!file) return
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      const file = acceptedFiles[0]
+      if (!file) return
 
-    setIsUploading(true)
-    setUploadProgress(0)
+      setIsUploading(true)
+      setUploadProgress(0)
 
-    try {
       // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90))
       }, 100)
 
-      const response = await apiClient.uploadFile(file)
+      uploadFileMutation.mutate(file, {
+        onSuccess: response => {
+          clearInterval(progressInterval)
+          setUploadProgress(100)
 
-      clearInterval(progressInterval)
-      setUploadProgress(100)
+          setUploadedFile({
+            id: response.data.id,
+            name: response.data.originalName,
+            size: response.data.size,
+          })
 
-      setUploadedFile({
-        id: response.data.id,
-        name: response.data.originalName,
-        size: response.data.size,
+          setTimeout(() => setUploadProgress(0), 1000)
+        },
+        onError: error => {
+          clearInterval(progressInterval)
+          console.error('File upload failed:', error)
+          // TODO: Show toast notification for error
+        },
+        onSettled: () => {
+          setIsUploading(false)
+        },
       })
-    } catch (error) {
-      console.error('File upload failed:', error)
-      // Handle error - you might want to show a toast notification
-    } finally {
-      setIsUploading(false)
-      setTimeout(() => setUploadProgress(0), 1000)
-    }
-  }, [])
+    },
+    [uploadFileMutation]
+  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -134,11 +148,41 @@ export function ExpenseForm({
     setUploadedFile(null)
   }
 
-  const handleSubmit = async (data: ExpenseFormData) => {
-    await onSubmit({
+  const handleSubmit = (data: ExpenseFormData) => {
+    const expenseData = {
       ...data,
       invoiceFileId: uploadedFile?.id,
-    })
+      submitterId: 'current-user-id', // TODO: Get from auth context
+    }
+
+    if (expense) {
+      // Update existing expense
+      updateExpenseMutation.mutate(
+        { id: expense.id, data: expenseData },
+        {
+          onSuccess: response => {
+            onSubmit?.(response.data)
+            // Query cache will automatically update!
+          },
+          onError: error => {
+            console.error('Failed to update expense:', error)
+            // TODO: Show toast notification for error
+          },
+        }
+      )
+    } else {
+      // Create new expense
+      createExpenseMutation.mutate(expenseData, {
+        onSuccess: response => {
+          onSubmit?.(response.data)
+          // Query cache will automatically update!
+        },
+        onError: error => {
+          console.error('Failed to create expense:', error)
+          // TODO: Show toast notification for error
+        },
+      })
+    }
   }
 
   const formatFileSize = (bytes: number) => {
@@ -270,11 +314,26 @@ export function ExpenseForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map(category => (
-                          <SelectItem key={category.id} value={category.name}>
-                            {category.name}
+                        {categoriesLoading ? (
+                          <SelectItem value="" disabled>
+                            Loading categories...
                           </SelectItem>
-                        ))}
+                        ) : categories.length === 0 ? (
+                          <SelectItem value="" disabled>
+                            No categories available
+                          </SelectItem>
+                        ) : (
+                          categories
+                            .filter(category => category.isActive)
+                            .map(category => (
+                              <SelectItem
+                                key={category.id}
+                                value={category.name}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
