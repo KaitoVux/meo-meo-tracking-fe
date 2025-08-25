@@ -36,11 +36,14 @@ export function useCategoryQuery(id: string) {
 /**
  * Query hook for fetching category usage statistics
  */
-export function useCategoryUsageQuery(id: string) {
+export function useCategoryUsageQuery(
+  id: string,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: queryKeys.categories.usage(id),
     queryFn: () => apiClient.getCategoryUsage(id),
-    enabled: !!id,
+    enabled: !!id && options?.enabled !== false,
   })
 }
 

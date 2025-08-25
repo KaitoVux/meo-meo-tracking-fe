@@ -1,38 +1,13 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 
-import { ExpenseForm, ExpenseList, ExpenseDetail } from '@/components/expenses'
-import {
-  apiClient,
-  type Expense,
-  type Category,
-  type CreateExpenseRequest,
-  type UpdateExpenseRequest,
-} from '@/lib/api'
-import { type ExpenseFormData } from '@/lib/validations'
-import { useAuthStore } from '@/store/auth'
+import { ExpenseDetail, ExpenseForm, ExpenseList } from '@/components/expenses'
+import { apiClient, type Expense } from '@/lib/api'
 
 type ViewMode = 'list' | 'create' | 'edit' | 'detail'
 
 export function ExpensesPage() {
-  const { user } = useAuthStore()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(false)
-
-  const loadCategories = async () => {
-    try {
-      const response = await apiClient.getCategories()
-      setCategories(response.data)
-    } catch (error) {
-      console.error('Failed to load categories:', error)
-      // You might want to show a toast notification here
-    }
-  }
-
-  useEffect(() => {
-    loadCategories()
-  }, [])
 
   const handleCreateExpense = () => {
     setSelectedExpense(null)
@@ -65,33 +40,11 @@ export function ExpensesPage() {
     }
   }
 
-  const handleSubmitExpense = async (
-    data: ExpenseFormData & { invoiceFileId?: string }
-  ) => {
-    if (!user) return
-
-    setLoading(true)
-    try {
-      if (viewMode === 'create') {
-        const createData: CreateExpenseRequest = {
-          ...data,
-          submitterId: user.id,
-        }
-        await apiClient.createExpense(createData)
-        // You might want to show a success toast here
-      } else if (viewMode === 'edit' && selectedExpense) {
-        const updateData: UpdateExpenseRequest = data
-        await apiClient.updateExpense(selectedExpense.id, updateData)
-        // You might want to show a success toast here
-      }
-
-      setViewMode('list')
-    } catch (error) {
-      console.error('Failed to save expense:', error)
-      // You might want to show an error toast here
-    } finally {
-      setLoading(false)
-    }
+  const handleSubmitExpense = (_expense: Expense) => {
+    // Handle the created/updated expense
+    setViewMode('list')
+    setSelectedExpense(null)
+    // You might want to show a success toast here
   }
 
   const handleStatusChange = async (status: string) => {
@@ -101,7 +54,7 @@ export function ExpensesPage() {
       await apiClient.updateExpenseStatus(selectedExpense.id, status)
       // Update the selected expense with new status
       setSelectedExpense(prev =>
-        prev ? { ...prev, status: status as any } : null
+        prev ? { ...prev, status: status as Expense['status'] } : null
       )
       // You might want to show a success toast here
     } catch (error) {
@@ -128,10 +81,8 @@ export function ExpensesPage() {
     return (
       <ExpenseForm
         expense={selectedExpense || undefined}
-        categories={categories}
         onSubmit={handleSubmitExpense}
         onCancel={handleCancel}
-        isLoading={loading}
       />
     )
   }

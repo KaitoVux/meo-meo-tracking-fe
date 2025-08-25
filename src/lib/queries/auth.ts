@@ -14,17 +14,24 @@ import { queryKeys } from '../query-keys'
 /**
  * Query hook for fetching user profile
  */
-export function useProfileQuery() {
+export function useProfileQuery(options?: {
+  enabled?: boolean
+  retry?: boolean | number | ((failureCount: number, error: any) => boolean)
+}) {
   return useQuery({
     queryKey: queryKeys.auth.profile(),
     queryFn: () => apiClient.getProfile(),
-    retry: (failureCount, error: any) => {
-      // Don't retry on 401 errors (unauthorized)
-      if (error?.status === 401) {
-        return false
-      }
-      return failureCount < 2
-    },
+    retry:
+      options?.retry !== undefined
+        ? options.retry
+        : (failureCount, error: any) => {
+            // Don't retry on 401 errors (unauthorized)
+            if (error?.status === 401) {
+              return false
+            }
+            return failureCount < 2
+          },
+    enabled: options?.enabled,
   })
 }
 

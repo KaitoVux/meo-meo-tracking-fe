@@ -7,7 +7,6 @@ import {
 } from 'react-router-dom'
 
 import { AuthProvider, ProtectedRoute } from './components/auth'
-import { DevPanel } from './components/dev/DevPanel'
 import { AppLayout } from './components/layout/AppLayout'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { Dashboard } from './pages/Dashboard'
@@ -28,7 +27,6 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <DevPanel />
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />

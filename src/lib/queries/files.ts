@@ -11,7 +11,10 @@ import { queryKeys } from '../query-keys'
 export function useFileQuery(id: string) {
   return useQuery({
     queryKey: queryKeys.files.detail(id),
-    queryFn: () => apiClient.getFile(id), // This would need to be implemented in apiClient
+    queryFn: () => {
+      // TODO: Implement getFile method in apiClient
+      throw new Error('getFile method not implemented in apiClient')
+    },
     enabled: !!id,
   })
 }

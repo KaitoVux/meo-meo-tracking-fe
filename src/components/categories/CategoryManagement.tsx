@@ -98,7 +98,7 @@ export const CategoryManagement: React.FC = () => {
 
   // No more manual fetching functions needed! TanStack Query handles everything.
 
-  const handleCreateCategory = (categoryData: CategoryFormData) => {
+  const handleCreateCategory = async (categoryData: CategoryFormData) => {
     const createData: CreateCategoryRequest = {
       name: categoryData.name,
       code: categoryData.code,
@@ -106,18 +106,22 @@ export const CategoryManagement: React.FC = () => {
       isActive: categoryData.isActive,
     }
 
-    createCategoryMutation.mutate(createData, {
-      onSuccess: () => {
-        setIsCreateDialogOpen(false)
-        // Query cache will automatically update!
-      },
-      onError: error => {
-        console.error('Failed to create category:', error)
-      },
+    return new Promise<void>((resolve, reject) => {
+      createCategoryMutation.mutate(createData, {
+        onSuccess: () => {
+          setIsCreateDialogOpen(false)
+          // Query cache will automatically update!
+          resolve()
+        },
+        onError: error => {
+          console.error('Failed to create category:', error)
+          reject(error)
+        },
+      })
     })
   }
 
-  const handleUpdateCategory = (categoryData: CategoryFormData) => {
+  const handleUpdateCategory = async (categoryData: CategoryFormData) => {
     if (!selectedCategory) return
 
     const updateData: UpdateCategoryRequest = {
@@ -127,19 +131,23 @@ export const CategoryManagement: React.FC = () => {
       isActive: categoryData.isActive,
     }
 
-    updateCategoryMutation.mutate(
-      { id: selectedCategory.id, data: updateData },
-      {
-        onSuccess: () => {
-          setIsEditDialogOpen(false)
-          setSelectedCategory(null)
-          // Query cache will automatically update!
-        },
-        onError: error => {
-          console.error('Failed to update category:', error)
-        },
-      }
-    )
+    return new Promise<void>((resolve, reject) => {
+      updateCategoryMutation.mutate(
+        { id: selectedCategory.id, data: updateData },
+        {
+          onSuccess: () => {
+            setIsEditDialogOpen(false)
+            setSelectedCategory(null)
+            // Query cache will automatically update!
+            resolve()
+          },
+          onError: error => {
+            console.error('Failed to update category:', error)
+            reject(error)
+          },
+        }
+      )
+    })
   }
 
   const handleToggleStatus = (category: Category) => {
@@ -153,18 +161,22 @@ export const CategoryManagement: React.FC = () => {
     )
   }
 
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
     if (!selectedCategory) return
 
-    deleteCategoryMutation.mutate(selectedCategory.id, {
-      onSuccess: () => {
-        setIsDeleteDialogOpen(false)
-        setSelectedCategory(null)
-        // Query cache will automatically update!
-      },
-      onError: error => {
-        console.error('Failed to delete category:', error)
-      },
+    return new Promise<void>((resolve, reject) => {
+      deleteCategoryMutation.mutate(selectedCategory.id, {
+        onSuccess: () => {
+          setIsDeleteDialogOpen(false)
+          setSelectedCategory(null)
+          // Query cache will automatically update!
+          resolve()
+        },
+        onError: error => {
+          console.error('Failed to delete category:', error)
+          reject(error)
+        },
+      })
     })
   }
 
