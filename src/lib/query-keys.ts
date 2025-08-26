@@ -78,6 +78,31 @@ export const queryKeys = {
     history: (expenseId: string) =>
       [...queryKeys.workflow.all, 'history', expenseId] as const,
   },
+
+  // Dashboard queries
+  dashboard: {
+    all: ['dashboard'] as const,
+    stats: () => [...queryKeys.dashboard.all, 'stats'] as const,
+  },
+
+  // Report queries
+  reports: {
+    all: ['reports'] as const,
+    lists: () => [...queryKeys.reports.all, 'list'] as const,
+    list: (params?: Record<string, any>) =>
+      [...queryKeys.reports.lists(), params] as const,
+    export: (params?: Record<string, unknown>) =>
+      [...queryKeys.reports.all, 'export', params] as const,
+  },
+
+  // Currency queries
+  currency: {
+    all: ['currency'] as const,
+    exchangeRate: (from: string, to: string) =>
+      [...queryKeys.currency.all, 'exchangeRate', from, to] as const,
+    conversion: (amount: number, from: string, to: string) =>
+      [...queryKeys.currency.all, 'conversion', amount, from, to] as const,
+  },
 } as const
 
 // Type helpers for query keys
@@ -136,4 +161,13 @@ export const invalidateQueries = {
 
   // Invalidate notifications
   notifications: () => queryKeys.notifications.all,
+
+  // Invalidate dashboard
+  dashboard: () => queryKeys.dashboard.all,
+
+  // Invalidate reports
+  reports: () => queryKeys.reports.all,
+
+  // Invalidate currency data
+  currency: () => queryKeys.currency.all,
 }

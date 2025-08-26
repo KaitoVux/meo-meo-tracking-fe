@@ -104,28 +104,31 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
         setUploadProgress(prev => Math.min(prev + 10, 90))
       }, 100)
 
-      uploadFileMutation.mutate(file, {
-        onSuccess: response => {
-          clearInterval(progressInterval)
-          setUploadProgress(100)
+      uploadFileMutation.mutate(
+        { file },
+        {
+          onSuccess: response => {
+            clearInterval(progressInterval)
+            setUploadProgress(100)
 
-          setUploadedFile({
-            id: response.data.id,
-            name: response.data.originalName,
-            size: response.data.size,
-          })
+            setUploadedFile({
+              id: response.data.id,
+              name: response.data.originalName,
+              size: response.data.size,
+            })
 
-          setTimeout(() => setUploadProgress(0), 1000)
-        },
-        onError: error => {
-          clearInterval(progressInterval)
-          console.error('File upload failed:', error)
-          // TODO: Show toast notification for error
-        },
-        onSettled: () => {
-          setIsUploading(false)
-        },
-      })
+            setTimeout(() => setUploadProgress(0), 1000)
+          },
+          onError: error => {
+            clearInterval(progressInterval)
+            console.error('File upload failed:', error)
+            // TODO: Show toast notification for error
+          },
+          onSettled: () => {
+            setIsUploading(false)
+          },
+        }
+      )
     },
     [uploadFileMutation]
   )

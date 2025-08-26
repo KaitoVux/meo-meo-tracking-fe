@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { useApiError } from '../../hooks/use-api-error'
+import { useApiStore } from '../../store/api'
 import { apiClient } from '../api'
 import type {
   LoginRequest,
@@ -18,9 +20,25 @@ export function useProfileQuery(options?: {
   enabled?: boolean
   retry?: boolean | number | ((failureCount: number, error: any) => boolean)
 }) {
+  const setFeatureLoading = useApiStore(state => state.setFeatureLoading)
+  const { handleAuthError } = useApiError()
+
   return useQuery({
     queryKey: queryKeys.auth.profile(),
-    queryFn: () => apiClient.getProfile(),
+    queryFn: async () => {
+      setFeatureLoading('auth', {
+        isLoading: true,
+        message: 'Loading profile...',
+      })
+      try {
+        return await apiClient.getProfile()
+      } catch (error) {
+        handleAuthError(error)
+        throw error
+      } finally {
+        setFeatureLoading('auth', { isLoading: false })
+      }
+    },
     retry:
       options?.retry !== undefined
         ? options.retry
@@ -42,9 +60,21 @@ export function useProfileQuery(options?: {
  */
 export function useLoginMutation() {
   const queryClient = useQueryClient()
+  const setFeatureLoading = useApiStore(state => state.setFeatureLoading)
+  const { handleAuthError } = useApiError()
 
   return useMutation({
-    mutationFn: (credentials: LoginRequest) => apiClient.login(credentials),
+    mutationFn: async (credentials: LoginRequest) => {
+      setFeatureLoading('auth', { isLoading: true, message: 'Signing in...' })
+      try {
+        return await apiClient.login(credentials)
+      } catch (error) {
+        handleAuthError(error)
+        throw error
+      } finally {
+        setFeatureLoading('auth', { isLoading: false })
+      }
+    },
     onSuccess: (data: AuthResponse) => {
       // Set the token in the API client
       apiClient.setToken(data.access_token)

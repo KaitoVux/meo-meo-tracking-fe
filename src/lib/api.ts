@@ -1,4 +1,11 @@
 // API client for backend communication
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  AxiosError,
+} from 'axios'
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 export interface LoginRequest {
@@ -204,77 +211,254 @@ export interface CategoryQueryParams {
   includeInactive?: boolean
 }
 
+export interface CategoryStatistics {
+  totalCategories: number
+  activeCategories: number
+  inactiveCategories: number
+  mostUsedCategories: Array<{
+    id: string
+    name: string
+    usageCount: number
+  }>
+}
+
+export interface NotificationData {
+  id: string
+  type: 'VALIDATION' | 'REMINDER' | 'STATUS_CHANGE' | 'SYSTEM'
+  title: string
+  message: string
+  status: 'UNREAD' | 'READ' | 'DISMISSED'
+  priority: 'LOW' | 'MEDIUM' | 'HIGH'
+  relatedEntityId?: string
+  relatedEntityType?: 'EXPENSE' | 'CATEGORY' | 'VENDOR'
+  createdAt: string
+  readAt?: string
+  dismissedAt?: string
+}
+
+export interface ExpenseStatusHistoryData {
+  id: string
+  expenseId: string
+  fromStatus: string
+  toStatus: string
+  notes?: string
+  changedBy: {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+  }
+  createdAt: string
+}
+
+export interface DashboardStats {
+  totalExpenses: number
+  totalAmount: number
+  monthlyExpenses: number
+  monthlyAmount: number
+  pendingApprovals: number
+  expensesByStatus: Record<string, number>
+  expensesByCategory: Array<{
+    category: string
+    count: number
+    amount: number
+  }>
+  recentExpenses: Expense[]
+}
+
+export interface ReportQueryParams {
+  startDate?: string
+  endDate?: string
+  category?: string
+  vendor?: string
+  status?: string
+  submitterId?: string
+  groupBy?: 'category' | 'vendor' | 'month' | 'status'
+  includeDetails?: boolean
+}
+
+export interface ReportData {
+  summary: {
+    totalExpenses: number
+    totalAmount: number
+    averageAmount: number
+    expenseCount: number
+  }
+  groupedData: Array<{
+    group: string
+    count: number
+    amount: number
+    expenses?: Expense[]
+  }>
+  chartData: Array<{
+    label: string
+    value: number
+  }>
+}
+
+export interface ExportReportParams {
+  format: 'excel' | 'csv' | 'pdf'
+  reportType: 'summary' | 'detailed' | 'payments-due'
+  filters: ReportQueryParams
+}
+
+export interface ExchangeRateData {
+  from: string
+  to: string
+  rate: number
+  lastUpdated: string
+  source: string
+}
+
+export interface CurrencyConversionData {
+  originalAmount: number
+  convertedAmount: number
+  from: string
+  to: string
+  rate: number
+  timestamp: string
+}
+
+// Enhanced error types for better error handling
+export interface ApiError {
+  code: string
+  message: string
+  details?: unknown
+  timestamp: string
+  status?: number
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean
+  data?: T
+  error?: ApiError
+  message?: string
+}
+
 class ApiClient {
-  private baseURL: string
+  private axiosInstance: AxiosInstance
   private token: string | null = null
 
   constructor(baseURL: string) {
-    this.baseURL = baseURL
+    this.axiosInstance = axios.create({
+      baseURL,
+      timeout: 30000, // 30 second timeout
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    this.setupInterceptors()
+  }
+
+  private setupInterceptors() {
+    // Request interceptor to add auth token
+    this.axiosInstance.interceptors.request.use(
+      config => {
+        if (this.token) {
+          config.headers.Authorization = `Bearer ${this.token}`
+        }
+        return config
+      },
+      error => {
+        return Promise.reject(this.handleError(error))
+      }
+    )
+
+    // Response interceptor for error handling
+    this.axiosInstance.interceptors.response.use(
+      (response: AxiosResponse) => {
+        return response
+      },
+      (error: AxiosError) => {
+        return Promise.reject(this.handleError(error))
+      }
+    )
+  }
+
+  private handleError(error: AxiosError): ApiError {
+    const apiError: ApiError = {
+      code: 'UNKNOWN_ERROR',
+      message: 'An unexpected error occurred',
+      timestamp: new Date().toISOString(),
+      status: error.response?.status,
+    }
+
+    if (error.response) {
+      // Server responded with error status
+      const responseData = error.response.data as {
+        code?: string
+        message?: string
+        details?: any
+      }
+      apiError.code = responseData?.code || `HTTP_${error.response.status}`
+      apiError.message = responseData?.message || error.message
+      apiError.details = responseData?.details
+      apiError.status = error.response.status
+    } else if (error.request) {
+      // Request was made but no response received
+      apiError.code = 'NETWORK_ERROR'
+      apiError.message = 'Network error - please check your connection'
+    } else {
+      // Something else happened
+      apiError.code = 'REQUEST_ERROR'
+      apiError.message = error.message
+    }
+
+    return apiError
   }
 
   setToken(token: string | null) {
     this.token = token
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
+  private async request<T>(config: AxiosRequestConfig): Promise<T> {
+    // eslint-disable-next-line no-useless-catch
+    try {
+      const response = await this.axiosInstance.request<T>(config)
+      return response.data
+    } catch (error) {
+      throw error // Error is already handled by interceptor
     }
-
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      )
-    }
-
-    return response.json()
   }
 
   // Authentication endpoints
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/login', {
+    return this.request<AuthResponse>({
+      url: '/auth/login',
       method: 'POST',
-      body: JSON.stringify(credentials),
+      data: credentials,
     })
   }
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/register', {
+    return this.request<AuthResponse>({
+      url: '/auth/register',
       method: 'POST',
-      body: JSON.stringify(userData),
+      data: userData,
     })
   }
 
   async getProfile(): Promise<AuthResponse['user']> {
-    return this.request<AuthResponse['user']>('/auth/profile')
+    return this.request<AuthResponse['user']>({
+      url: '/auth/profile',
+      method: 'GET',
+    })
   }
 
   async updateProfile(
     userData: UpdateProfileRequest
   ): Promise<AuthResponse['user']> {
-    return this.request<AuthResponse['user']>('/auth/profile', {
+    return this.request<AuthResponse['user']>({
+      url: '/auth/profile',
       method: 'PATCH',
-      body: JSON.stringify(userData),
+      data: userData,
     })
   }
 
   async refreshToken(): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/refresh', {
+    return this.request<AuthResponse>({
+      url: '/auth/refresh',
       method: 'POST',
     })
   }
@@ -283,45 +467,46 @@ class ApiClient {
   async createExpense(
     expenseData: CreateExpenseRequest
   ): Promise<{ success: boolean; data: Expense; message: string }> {
-    return this.request('/expenses', {
+    return this.request({
+      url: '/expenses',
       method: 'POST',
-      body: JSON.stringify(expenseData),
+      data: expenseData,
     })
   }
 
   async getExpenses(
     params?: ExpenseQueryParams
   ): Promise<PaginatedResponse<Expense>> {
-    const searchParams = new URLSearchParams()
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          searchParams.append(key, value.toString())
-        }
-      })
-    }
-    const queryString = searchParams.toString()
-    return this.request(`/expenses${queryString ? `?${queryString}` : ''}`)
+    return this.request({
+      url: '/expenses',
+      method: 'GET',
+      params,
+    })
   }
 
   async getExpense(id: string): Promise<{ success: boolean; data: Expense }> {
-    return this.request(`/expenses/${id}`)
+    return this.request({
+      url: `/expenses/${id}`,
+      method: 'GET',
+    })
   }
 
   async updateExpense(
     id: string,
     expenseData: UpdateExpenseRequest
   ): Promise<{ success: boolean; data: Expense; message: string }> {
-    return this.request(`/expenses/${id}`, {
+    return this.request({
+      url: `/expenses/${id}`,
       method: 'PATCH',
-      body: JSON.stringify(expenseData),
+      data: expenseData,
     })
   }
 
   async deleteExpense(
     id: string
   ): Promise<{ success: boolean; message: string }> {
-    return this.request(`/expenses/${id}`, {
+    return this.request({
+      url: `/expenses/${id}`,
       method: 'DELETE',
     })
   }
@@ -331,9 +516,10 @@ class ApiClient {
     status: string,
     notes?: string
   ): Promise<{ success: boolean; data: Expense; message: string }> {
-    return this.request(`/expenses/${id}/status`, {
+    return this.request({
+      url: `/expenses/${id}/status`,
       method: 'PATCH',
-      body: JSON.stringify({ status, notes }),
+      data: { status, notes },
     })
   }
 
@@ -341,24 +527,27 @@ class ApiClient {
   async getCategories(
     params?: CategoryQueryParams
   ): Promise<{ success: boolean; data: Category[] }> {
-    const searchParams = new URLSearchParams()
-    if (params?.includeInactive) {
-      searchParams.append('includeInactive', 'true')
-    }
-    const queryString = searchParams.toString()
-    return this.request(`/categories${queryString ? `?${queryString}` : ''}`)
+    return this.request({
+      url: '/categories',
+      method: 'GET',
+      params,
+    })
   }
 
   async getCategory(id: string): Promise<{ success: boolean; data: Category }> {
-    return this.request(`/categories/${id}`)
+    return this.request({
+      url: `/categories/${id}`,
+      method: 'GET',
+    })
   }
 
   async createCategory(
     categoryData: CreateCategoryRequest
   ): Promise<{ success: boolean; data: Category; message: string }> {
-    return this.request('/categories', {
+    return this.request({
+      url: '/categories',
       method: 'POST',
-      body: JSON.stringify(categoryData),
+      data: categoryData,
     })
   }
 
@@ -366,9 +555,10 @@ class ApiClient {
     id: string,
     categoryData: UpdateCategoryRequest
   ): Promise<{ success: boolean; data: Category; message: string }> {
-    return this.request(`/categories/${id}`, {
+    return this.request({
+      url: `/categories/${id}`,
       method: 'PUT',
-      body: JSON.stringify(categoryData),
+      data: categoryData,
     })
   }
 
@@ -376,40 +566,50 @@ class ApiClient {
     id: string,
     isActive: boolean
   ): Promise<{ success: boolean; data: Category; message: string }> {
-    return this.request(`/categories/${id}/status`, {
+    return this.request({
+      url: `/categories/${id}/status`,
       method: 'PUT',
-      body: JSON.stringify({ isActive }),
+      data: { isActive },
     })
   }
 
   async deleteCategory(
     id: string
   ): Promise<{ success: boolean; message: string }> {
-    return this.request(`/categories/${id}`, {
+    return this.request({
+      url: `/categories/${id}`,
       method: 'DELETE',
     })
   }
 
-  async getCategoryUsage(
-    id: string
-  ): Promise<{
+  async getCategoryUsage(id: string): Promise<{
     success: boolean
     data: { categoryId: string; usageCount: number }
   }> {
-    return this.request(`/categories/${id}/usage`)
+    return this.request({
+      url: `/categories/${id}/usage`,
+      method: 'GET',
+    })
   }
 
-  async getCategoryStatistics(): Promise<{ success: boolean; data: any }> {
-    return this.request('/categories/statistics')
+  async getCategoryStatistics(): Promise<{
+    success: boolean
+    data: CategoryStatistics
+  }> {
+    return this.request({
+      url: '/categories/statistics',
+      method: 'GET',
+    })
   }
 
   // Vendor endpoints
   async createVendor(
     vendorData: CreateVendorRequest
   ): Promise<{ success: boolean; data: Vendor; message: string }> {
-    return this.request('/vendors', {
+    return this.request({
+      url: '/vendors',
       method: 'POST',
-      body: JSON.stringify(vendorData),
+      data: vendorData,
     })
   }
 
@@ -422,40 +622,43 @@ class ApiClient {
       limit: number
     }
   }> {
-    const searchParams = new URLSearchParams()
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          searchParams.append(key, value.toString())
-        }
-      })
-    }
-    const queryString = searchParams.toString()
-    return this.request(`/vendors${queryString ? `?${queryString}` : ''}`)
+    return this.request({
+      url: '/vendors',
+      method: 'GET',
+      params,
+    })
   }
 
   async getActiveVendors(): Promise<{ success: boolean; data: Vendor[] }> {
-    return this.request('/vendors/active')
+    return this.request({
+      url: '/vendors/active',
+      method: 'GET',
+    })
   }
 
   async getVendor(id: string): Promise<{ success: boolean; data: Vendor }> {
-    return this.request(`/vendors/${id}`)
+    return this.request({
+      url: `/vendors/${id}`,
+      method: 'GET',
+    })
   }
 
   async updateVendor(
     id: string,
     vendorData: UpdateVendorRequest
   ): Promise<{ success: boolean; data: Vendor; message: string }> {
-    return this.request(`/vendors/${id}`, {
+    return this.request({
+      url: `/vendors/${id}`,
       method: 'PATCH',
-      body: JSON.stringify(vendorData),
+      data: vendorData,
     })
   }
 
   async toggleVendorStatus(
     id: string
   ): Promise<{ success: boolean; data: Vendor; message: string }> {
-    return this.request(`/vendors/${id}/toggle-status`, {
+    return this.request({
+      url: `/vendors/${id}/toggle-status`,
       method: 'PATCH',
     })
   }
@@ -463,13 +666,20 @@ class ApiClient {
   async deleteVendor(
     id: string
   ): Promise<{ success: boolean; message: string }> {
-    return this.request(`/vendors/${id}`, {
+    return this.request({
+      url: `/vendors/${id}`,
       method: 'DELETE',
     })
   }
 
   // File upload endpoints
-  async uploadFile(file: File): Promise<{
+  async uploadFile(
+    file: File,
+    onUploadProgress?: (progressEvent: {
+      loaded: number
+      total?: number
+    }) => void
+  ): Promise<{
     success: boolean
     data: {
       id: string
@@ -482,27 +692,40 @@ class ApiClient {
     const formData = new FormData()
     formData.append('file', file)
 
-    const url = `${this.baseURL}/files/upload`
-    const headers: Record<string, string> = {}
-
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`
-    }
-
-    const response = await fetch(url, {
+    return this.request({
+      url: '/files/upload',
       method: 'POST',
-      headers,
-      body: formData,
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress,
     })
+  }
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      )
+  async getFile(id: string): Promise<{
+    success: boolean
+    data: {
+      id: string
+      filename: string
+      originalName: string
+      mimeType: string
+      size: number
+      googleDriveId: string
+      googleDriveUrl: string
     }
+  }> {
+    return this.request({
+      url: `/files/${id}`,
+      method: 'GET',
+    })
+  }
 
-    return response.json()
+  async deleteFile(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request({
+      url: `/files/${id}`,
+      method: 'DELETE',
+    })
   }
 
   // Notification endpoints
@@ -510,24 +733,26 @@ class ApiClient {
     status?: string,
     limit: number = 50,
     offset: number = 0
-  ): Promise<{ notifications: any[]; total: number }> {
-    const searchParams = new URLSearchParams()
-    if (status) searchParams.append('status', status)
-    searchParams.append('limit', limit.toString())
-    searchParams.append('offset', offset.toString())
-
-    const queryString = searchParams.toString()
-    return this.request(`/notifications${queryString ? `?${queryString}` : ''}`)
+  ): Promise<{ notifications: NotificationData[]; total: number }> {
+    return this.request({
+      url: '/notifications',
+      method: 'GET',
+      params: { status, limit, offset },
+    })
   }
 
   async getUnreadNotificationCount(): Promise<{ count: number }> {
-    return this.request('/notifications/unread-count')
+    return this.request({
+      url: '/notifications/unread-count',
+      method: 'GET',
+    })
   }
 
   async markNotificationAsRead(
     notificationId: string
   ): Promise<{ success: boolean }> {
-    return this.request(`/notifications/${notificationId}/read`, {
+    return this.request({
+      url: `/notifications/${notificationId}/read`,
       method: 'PATCH',
     })
   }
@@ -535,13 +760,15 @@ class ApiClient {
   async dismissNotification(
     notificationId: string
   ): Promise<{ success: boolean }> {
-    return this.request(`/notifications/${notificationId}/dismiss`, {
+    return this.request({
+      url: `/notifications/${notificationId}/dismiss`,
       method: 'PATCH',
     })
   }
 
   async markAllNotificationsAsRead(): Promise<{ success: boolean }> {
-    return this.request('/notifications/mark-all-read', {
+    return this.request({
+      url: '/notifications/mark-all-read',
       method: 'PATCH',
     })
   }
@@ -549,8 +776,66 @@ class ApiClient {
   // Workflow endpoints
   async getExpenseStatusHistory(
     expenseId: string
-  ): Promise<{ success: boolean; data: any[] }> {
-    return this.request(`/expenses/${expenseId}/status-history`)
+  ): Promise<{ success: boolean; data: ExpenseStatusHistoryData[] }> {
+    return this.request({
+      url: `/expenses/${expenseId}/status-history`,
+      method: 'GET',
+    })
+  }
+
+  // Dashboard and reporting endpoints
+  async getDashboardStats(): Promise<{
+    success: boolean
+    data: DashboardStats
+  }> {
+    return this.request({
+      url: '/dashboard/stats',
+      method: 'GET',
+    })
+  }
+
+  async getReports(
+    params: ReportQueryParams
+  ): Promise<{ success: boolean; data: ReportData }> {
+    return this.request({
+      url: '/reports',
+      method: 'GET',
+      params,
+    })
+  }
+
+  async exportReport(params: ExportReportParams): Promise<Blob> {
+    const response = await this.axiosInstance.request({
+      url: '/reports/export',
+      method: 'POST',
+      data: params,
+      responseType: 'blob',
+    })
+    return response.data
+  }
+
+  // Currency conversion endpoints
+  async getExchangeRate(
+    from: string,
+    to: string
+  ): Promise<{ success: boolean; data: ExchangeRateData }> {
+    return this.request({
+      url: '/currency/exchange-rate',
+      method: 'GET',
+      params: { from, to },
+    })
+  }
+
+  async convertCurrency(
+    amount: number,
+    from: string,
+    to: string
+  ): Promise<{ success: boolean; data: CurrencyConversionData }> {
+    return this.request({
+      url: '/currency/convert',
+      method: 'POST',
+      data: { amount, from, to },
+    })
   }
 }
 

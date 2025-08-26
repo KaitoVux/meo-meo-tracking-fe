@@ -23,12 +23,8 @@ export interface Notification {
   id: string
   title: string
   message: string
-  type:
-    | 'missing_fields'
-    | 'invoice_reminder'
-    | 'status_change'
-    | 'validation_error'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
+  type: 'VALIDATION' | 'REMINDER' | 'STATUS_CHANGE' | 'SYSTEM'
+  priority: 'LOW' | 'MEDIUM' | 'HIGH'
   status: 'unread' | 'read' | 'dismissed'
   createdAt: string
   readAt?: string
@@ -44,17 +40,16 @@ interface NotificationCenterProps {
 }
 
 const notificationIcons = {
-  missing_fields: AlertCircle,
-  invoice_reminder: FileText,
-  status_change: CheckCircle,
-  validation_error: AlertCircle,
+  VALIDATION: AlertCircle,
+  REMINDER: FileText,
+  STATUS_CHANGE: CheckCircle,
+  SYSTEM: Info,
 }
 
 const priorityColors = {
-  low: 'text-gray-500',
-  medium: 'text-blue-500',
-  high: 'text-orange-500',
-  urgent: 'text-red-500',
+  LOW: 'text-gray-500',
+  MEDIUM: 'text-blue-500',
+  HIGH: 'text-orange-500',
 }
 
 export function NotificationCenter({ className }: NotificationCenterProps) {
@@ -67,7 +62,21 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
     try {
       setLoading(true)
       const response = await apiClient.getNotifications()
-      setNotifications(response.notifications)
+      setNotifications(
+        response.notifications.map(notification => ({
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          status:
+            notification.status === 'READ'
+              ? ('read' as const)
+              : ('unread' as const),
+          createdAt: notification.createdAt,
+          readAt: notification.readAt,
+          priority: notification.priority,
+        }))
+      )
     } catch (error) {
       console.error('Failed to load notifications:', error)
     } finally {
