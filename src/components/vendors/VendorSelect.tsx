@@ -58,7 +58,7 @@ export function VendorSelect({
       })
 
       if (response.success) {
-        setVendors(response.data.vendors)
+        setVendors(response.data || [])
       }
     } catch (error) {
       console.error('Failed to fetch vendors:', error)

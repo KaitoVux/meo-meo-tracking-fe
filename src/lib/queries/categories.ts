@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '../api'
 import type {
+  ApiResponse,
   Category,
   CreateCategoryRequest,
   UpdateCategoryRequest,
@@ -82,8 +83,8 @@ export function useCreateCategoryMutation() {
       // Optimistically update category lists
       queryClient.setQueriesData(
         { queryKey: queryKeys.categories.lists() },
-        (old: { success: boolean; data: Category[] } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Category[]> | undefined) => {
+          if (!old || !old.data) return old
 
           // Create optimistic category object
           const optimisticCategory: Category = {
@@ -118,10 +119,12 @@ export function useCreateCategoryMutation() {
     },
     onSuccess: data => {
       // Add the new category to the cache
-      queryClient.setQueryData(queryKeys.categories.detail(data.data.id), {
-        success: true,
-        data: data.data,
-      })
+      if (data.data) {
+        queryClient.setQueryData(
+          queryKeys.categories.detail(data.data.id),
+          data
+        )
+      }
     },
     onSettled: () => {
       // Always refetch category lists and statistics
@@ -158,8 +161,8 @@ export function useUpdateCategoryMutation() {
       // Optimistically update the category
       queryClient.setQueryData(
         queryKeys.categories.detail(id),
-        (old: { success: boolean; data: Category } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Category> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
             data: {
@@ -174,11 +177,11 @@ export function useUpdateCategoryMutation() {
       // Also update the category in any list queries
       queryClient.setQueriesData(
         { queryKey: queryKeys.categories.lists() },
-        (old: { success: boolean; data: Category[] } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Category[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: old.data.map(category =>
+            data: old.data.map((category: Category) =>
               category.id === id
                 ? {
                     ...category,
@@ -238,8 +241,8 @@ export function useUpdateCategoryStatusMutation() {
       // Optimistically update the category status
       queryClient.setQueryData(
         queryKeys.categories.detail(id),
-        (old: { success: boolean; data: Category } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Category> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
             data: {
@@ -254,11 +257,11 @@ export function useUpdateCategoryStatusMutation() {
       // Also update the category in any list queries
       queryClient.setQueriesData(
         { queryKey: queryKeys.categories.lists() },
-        (old: { success: boolean; data: Category[] } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Category[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: old.data.map(category =>
+            data: old.data.map((category: Category) =>
               category.id === id
                 ? { ...category, isActive, updatedAt: new Date().toISOString() }
                 : category
@@ -313,11 +316,11 @@ export function useDeleteCategoryMutation() {
       // Optimistically remove the category from lists
       queryClient.setQueriesData(
         { queryKey: queryKeys.categories.lists() },
-        (old: { success: boolean; data: Category[] } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Category[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: old.data.filter(category => category.id !== id),
+            data: old.data.filter((category: Category) => category.id !== id),
           }
         }
       )
@@ -333,7 +336,7 @@ export function useDeleteCategoryMutation() {
       }
       console.error('Failed to delete category:', error)
     },
-    onSuccess: (data, id) => {
+    onSuccess: (_data, id) => {
       // Remove the category detail from cache
       queryClient.removeQueries({ queryKey: queryKeys.categories.detail(id) })
     },

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '../api'
 import type {
+  ApiResponse,
   Vendor,
   CreateVendorRequest,
   UpdateVendorRequest,
@@ -67,20 +68,8 @@ export function useCreateVendorMutation() {
       // Optimistically update vendor lists
       queryClient.setQueriesData(
         { queryKey: queryKeys.vendors.lists() },
-        (
-          old:
-            | {
-                success: boolean
-                data: {
-                  vendors: Vendor[]
-                  total: number
-                  page: number
-                  limit: number
-                }
-              }
-            | undefined
-        ) => {
-          if (!old) return old
+        (old: ApiResponse<Vendor[]> | undefined) => {
+          if (!old || !old.data) return old
 
           // Create optimistic vendor object
           const optimisticVendor: Vendor = {
@@ -98,11 +87,13 @@ export function useCreateVendorMutation() {
 
           return {
             ...old,
-            data: {
-              ...old.data,
-              vendors: [optimisticVendor, ...old.data.vendors],
-              total: old.data.total + 1,
-            },
+            data: [optimisticVendor, ...old.data],
+            pagination: old.pagination
+              ? {
+                  ...old.pagination,
+                  total: old.pagination.total + 1,
+                }
+              : undefined,
           }
         }
       )
@@ -111,8 +102,8 @@ export function useCreateVendorMutation() {
       if (newVendor.status !== 'INACTIVE') {
         queryClient.setQueryData(
           queryKeys.vendors.active(),
-          (old: { success: boolean; data: Vendor[] } | undefined) => {
-            if (!old) return old
+          (old: ApiResponse<Vendor[]> | undefined) => {
+            if (!old || !old.data) return old
             const optimisticVendor: Vendor = {
               id: `temp-${Date.now()}`,
               name: newVendor.name,
@@ -146,10 +137,9 @@ export function useCreateVendorMutation() {
     },
     onSuccess: data => {
       // Add the new vendor to the cache
-      queryClient.setQueryData(queryKeys.vendors.detail(data.data.id), {
-        success: true,
-        data: data.data,
-      })
+      if (data.data) {
+        queryClient.setQueryData(queryKeys.vendors.detail(data.data.id), data)
+      }
     },
     onSettled: () => {
       // Always refetch vendor lists to ensure consistency
@@ -183,8 +173,8 @@ export function useUpdateVendorMutation() {
       // Optimistically update the vendor
       queryClient.setQueryData(
         queryKeys.vendors.detail(id),
-        (old: { success: boolean; data: Vendor } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Vendor> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
             data: {
@@ -199,34 +189,19 @@ export function useUpdateVendorMutation() {
       // Also update the vendor in any list queries
       queryClient.setQueriesData(
         { queryKey: queryKeys.vendors.lists() },
-        (
-          old:
-            | {
-                success: boolean
-                data: {
-                  vendors: Vendor[]
-                  total: number
-                  page: number
-                  limit: number
-                }
-              }
-            | undefined
-        ) => {
-          if (!old) return old
+        (old: ApiResponse<Vendor[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: {
-              ...old.data,
-              vendors: old.data.vendors.map(vendor =>
-                vendor.id === id
-                  ? {
-                      ...vendor,
-                      ...updateData,
-                      updatedAt: new Date().toISOString(),
-                    }
-                  : vendor
-              ),
-            },
+            data: old.data.map((vendor: Vendor) =>
+              vendor.id === id
+                ? {
+                    ...vendor,
+                    ...updateData,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : vendor
+            ),
           }
         }
       )
@@ -235,14 +210,14 @@ export function useUpdateVendorMutation() {
       if (updateData.status !== undefined) {
         queryClient.setQueryData(
           queryKeys.vendors.active(),
-          (old: { success: boolean; data: Vendor[] } | undefined) => {
-            if (!old) return old
+          (old: ApiResponse<Vendor[]> | undefined) => {
+            if (!old || !old.data) return old
             if (updateData.status === 'ACTIVE') {
               // Add to active list if not already there
-              const exists = old.data.some(v => v.id === id)
+              const exists = old.data.some((v: Vendor) => v.id === id)
               if (!exists) {
                 const updatedVendor = {
-                  ...old.data.find(v => v.id === id),
+                  ...old.data.find((v: Vendor) => v.id === id),
                   ...updateData,
                 } as Vendor
                 return {
@@ -254,7 +229,7 @@ export function useUpdateVendorMutation() {
               // Remove from active list
               return {
                 ...old,
-                data: old.data.filter(vendor => vendor.id !== id),
+                data: old.data.filter((vendor: Vendor) => vendor.id !== id),
               }
             }
             return old
@@ -306,8 +281,8 @@ export function useToggleVendorStatusMutation() {
       // Optimistically toggle the vendor status
       queryClient.setQueryData(
         queryKeys.vendors.detail(id),
-        (old: { success: boolean; data: Vendor } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Vendor> | undefined) => {
+          if (!old || !old.data) return old
           const newStatus = old.data.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
           return {
             ...old,
@@ -362,27 +337,17 @@ export function useDeleteVendorMutation() {
       // Optimistically remove the vendor from lists
       queryClient.setQueriesData(
         { queryKey: queryKeys.vendors.lists() },
-        (
-          old:
-            | {
-                success: boolean
-                data: {
-                  vendors: Vendor[]
-                  total: number
-                  page: number
-                  limit: number
-                }
-              }
-            | undefined
-        ) => {
-          if (!old) return old
+        (old: ApiResponse<Vendor[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: {
-              ...old.data,
-              vendors: old.data.vendors.filter(vendor => vendor.id !== id),
-              total: old.data.total - 1,
-            },
+            data: old.data.filter((vendor: Vendor) => vendor.id !== id),
+            pagination: old.pagination
+              ? {
+                  ...old.pagination,
+                  total: old.pagination.total - 1,
+                }
+              : undefined,
           }
         }
       )
@@ -390,11 +355,11 @@ export function useDeleteVendorMutation() {
       // Also remove from active vendors
       queryClient.setQueryData(
         queryKeys.vendors.active(),
-        (old: { success: boolean; data: Vendor[] } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Vendor[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: old.data.filter(vendor => vendor.id !== id),
+            data: old.data.filter((vendor: Vendor) => vendor.id !== id),
           }
         }
       )
@@ -410,7 +375,7 @@ export function useDeleteVendorMutation() {
       }
       console.error('Failed to delete vendor:', error)
     },
-    onSuccess: (data, id) => {
+    onSuccess: (_data, id) => {
       // Remove the vendor detail from cache
       queryClient.removeQueries({ queryKey: queryKeys.vendors.detail(id) })
     },

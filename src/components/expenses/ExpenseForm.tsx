@@ -112,9 +112,9 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
             setUploadProgress(100)
 
             setUploadedFile({
-              id: response.data.id,
-              name: response.data.originalName,
-              size: response.data.size,
+              id: response.data?.id || '',
+              name: response.data?.originalName || '',
+              size: response.data?.size || 0,
             })
 
             setTimeout(() => setUploadProgress(0), 1000)
@@ -164,7 +164,9 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
         { id: expense.id, data: expenseData },
         {
           onSuccess: response => {
-            onSubmit?.(response.data)
+            if (response.data) {
+              onSubmit?.(response.data)
+            }
             // Query cache will automatically update!
           },
           onError: error => {
@@ -177,7 +179,9 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
       // Create new expense
       createExpenseMutation.mutate(expenseData, {
         onSuccess: response => {
-          onSubmit?.(response.data)
+          if (response.data) {
+            onSubmit?.(response.data)
+          }
           // Query cache will automatically update!
         },
         onError: error => {

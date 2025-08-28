@@ -40,7 +40,7 @@ export const CategoryDeleteDialog: React.FC<CategoryDeleteDialogProps> = ({
       setLoading(true)
       setError(null)
       const response = await apiClient.getCategoryUsage(category.id)
-      setUsageCount(response.data.usageCount)
+      setUsageCount(response.data?.usageCount || 0)
     } catch {
       setError('Failed to check category usage')
       setUsageCount(null)

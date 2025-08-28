@@ -6,10 +6,10 @@ import {
 } from '@tanstack/react-query'
 
 import type {
+  ApiResponse,
   CreateExpenseRequest,
   Expense,
   ExpenseQueryParams,
-  PaginatedResponse,
   UpdateExpenseRequest,
 } from '../api'
 import { apiClient } from '../api'
@@ -61,11 +61,13 @@ export function useInfiniteExpensesQuery(
     queryFn: ({ pageParam = 1 }) =>
       apiClient.getExpenses({ ...baseParams, page: pageParam }),
     initialPageParam: 1,
-    getNextPageParam: (lastPage: PaginatedResponse<Expense>) => {
+    getNextPageParam: (lastPage: ApiResponse<Expense[]>) => {
+      if (!lastPage.pagination) return undefined
       const { page, totalPages } = lastPage.pagination
       return page < totalPages ? page + 1 : undefined
     },
-    getPreviousPageParam: (firstPage: PaginatedResponse<Expense>) => {
+    getPreviousPageParam: (firstPage: ApiResponse<Expense[]>) => {
+      if (!firstPage.pagination) return undefined
       const { page } = firstPage.pagination
       return page > 1 ? page - 1 : undefined
     },
@@ -95,8 +97,8 @@ export function useCreateExpenseMutation() {
       // Optimistically update expense lists
       queryClient.setQueriesData(
         { queryKey: queryKeys.expenses.lists() },
-        (old: PaginatedResponse<Expense> | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Expense[]> | undefined) => {
+          if (!old || !old.data) return old
 
           // Create optimistic expense object
           const optimisticExpense: Expense = {
@@ -127,10 +129,12 @@ export function useCreateExpenseMutation() {
           return {
             ...old,
             data: [optimisticExpense, ...old.data],
-            pagination: {
-              ...old.pagination,
-              total: old.pagination.total + 1,
-            },
+            pagination: old.pagination
+              ? {
+                  ...old.pagination,
+                  total: old.pagination.total + 1,
+                }
+              : undefined,
           }
         }
       )
@@ -148,10 +152,9 @@ export function useCreateExpenseMutation() {
     },
     onSuccess: data => {
       // Add the new expense to the cache
-      queryClient.setQueryData(queryKeys.expenses.detail(data.data.id), {
-        success: true,
-        data: data.data,
-      })
+      if (data.data) {
+        queryClient.setQueryData(queryKeys.expenses.detail(data.data.id), data)
+      }
     },
     onSettled: () => {
       // Always refetch expense lists to ensure consistency
@@ -185,8 +188,8 @@ export function useUpdateExpenseMutation() {
       // Optimistically update the expense
       queryClient.setQueryData(
         queryKeys.expenses.detail(id),
-        (old: { success: boolean; data: Expense } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Expense> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
             data: {
@@ -201,11 +204,11 @@ export function useUpdateExpenseMutation() {
       // Also update the expense in any list queries
       queryClient.setQueriesData(
         { queryKey: queryKeys.expenses.lists() },
-        (old: PaginatedResponse<Expense> | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Expense[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: old.data.map(expense =>
+            data: old.data.map((expense: Expense) =>
               expense.id === id
                 ? {
                     ...expense,
@@ -270,8 +273,8 @@ export function useUpdateExpenseStatusMutation() {
       // Optimistically update the expense status
       queryClient.setQueryData(
         queryKeys.expenses.detail(id),
-        (old: { success: boolean; data: Expense } | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Expense> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
             data: {
@@ -286,11 +289,11 @@ export function useUpdateExpenseStatusMutation() {
       // Also update the expense in any list queries
       queryClient.setQueriesData(
         { queryKey: queryKeys.expenses.lists() },
-        (old: PaginatedResponse<Expense> | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Expense[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: old.data.map(expense =>
+            data: old.data.map((expense: Expense) =>
               expense.id === id
                 ? {
                     ...expense,
@@ -351,15 +354,17 @@ export function useDeleteExpenseMutation() {
       // Optimistically remove the expense from lists
       queryClient.setQueriesData(
         { queryKey: queryKeys.expenses.lists() },
-        (old: PaginatedResponse<Expense> | undefined) => {
-          if (!old) return old
+        (old: ApiResponse<Expense[]> | undefined) => {
+          if (!old || !old.data) return old
           return {
             ...old,
-            data: old.data.filter(expense => expense.id !== id),
-            pagination: {
-              ...old.pagination,
-              total: old.pagination.total - 1,
-            },
+            data: old.data.filter((expense: Expense) => expense.id !== id),
+            pagination: old.pagination
+              ? {
+                  ...old.pagination,
+                  total: old.pagination.total - 1,
+                }
+              : undefined,
           }
         }
       )
@@ -375,7 +380,7 @@ export function useDeleteExpenseMutation() {
       }
       console.error('Failed to delete expense:', error)
     },
-    onSuccess: (data, id) => {
+    onSuccess: (_data, id) => {
       // Remove the expense detail from cache
       queryClient.removeQueries({ queryKey: queryKeys.expenses.detail(id) })
     },

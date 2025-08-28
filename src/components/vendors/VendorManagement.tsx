@@ -81,8 +81,8 @@ export function VendorManagement() {
   const toggleStatusMutation = useToggleVendorStatusMutation()
 
   // Extract data with fallbacks
-  const vendors = vendorsResponse?.data?.vendors || []
-  const totalVendors = vendorsResponse?.data?.total || 0
+  const vendors = vendorsResponse?.data || []
+  const totalVendors = vendorsResponse?.pagination?.total || 0
   const totalPages = Math.ceil(totalVendors / 20)
 
   // No more manual fetching functions needed! TanStack Query handles everything.

@@ -164,17 +164,6 @@ export interface ExpenseQueryParams {
   search?: string
 }
 
-export interface PaginatedResponse<T> {
-  success: boolean
-  data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
-
 export interface Category {
   id: string
   name: string
@@ -328,29 +317,22 @@ export interface ApiError {
   status?: number
 }
 
+// Backend response structure (matches what backend actually returns)
 export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
-  error?: ApiError
   message?: string
-}
-
-// Backend success response structure (matches what backend actually returns)
-export interface BackendResponse<T = unknown> {
-  success: boolean
-  data: T
-  message?: string
-}
-
-// Backend paginated response structure
-export interface BackendPaginatedResponse<T = unknown> {
-  success: boolean
-  data: T[]
-  pagination: {
+  pagination?: {
     page: number
     limit: number
     total: number
     totalPages: number
+  }
+  error?: {
+    code?: string
+    details?: unknown
+    timestamp?: string
+    path?: string
   }
 }
 
@@ -458,42 +440,29 @@ class ApiClient {
     this.token = token
   }
 
-  private async request<T>(config: AxiosRequestConfig): Promise<T> {
-    const response = await this.axiosInstance.request<T>(config)
-    return response.data
-  }
-
-  // Helper method for backend responses that unwraps the data
-  private async requestBackend<T>(config: AxiosRequestConfig): Promise<T> {
-    const response =
-      await this.axiosInstance.request<BackendResponse<T>>(config)
+  // All backend endpoints return ApiResponse<T> format, so we use this consistently
+  private async request<T>(
+    config: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> {
+    const response = await this.axiosInstance.request<ApiResponse<T>>(config)
     const backendResponse = response.data
 
     if (!backendResponse.success) {
       throw new Error(backendResponse.message || 'Request failed')
     }
 
-    return backendResponse.data
+    return backendResponse
   }
 
-  // Helper method for paginated backend responses
-  private async requestBackendPaginated<T>(
-    config: AxiosRequestConfig
-  ): Promise<BackendPaginatedResponse<T>> {
-    const response =
-      await this.axiosInstance.request<BackendPaginatedResponse<T>>(config)
-    const backendResponse = response.data
-
-    if (!backendResponse.success) {
-      throw new Error('Request failed')
-    }
-
-    return backendResponse
+  // Helper method that unwraps the data from ApiResponse for simpler usage
+  private async requestData<T>(config: AxiosRequestConfig): Promise<T> {
+    const response = await this.request<T>(config)
+    return response.data!
   }
 
   // Authentication endpoints
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>({
+    return this.requestData<AuthResponse>({
       url: '/auth/login',
       method: 'POST',
       data: credentials,
@@ -501,7 +470,7 @@ class ApiClient {
   }
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>({
+    return this.requestData<AuthResponse>({
       url: '/auth/register',
       method: 'POST',
       data: userData,
@@ -509,7 +478,7 @@ class ApiClient {
   }
 
   async getProfile(): Promise<AuthResponse['user']> {
-    return this.request<AuthResponse['user']>({
+    return this.requestData<AuthResponse['user']>({
       url: '/auth/profile',
       method: 'GET',
     })
@@ -518,15 +487,15 @@ class ApiClient {
   async updateProfile(
     userData: UpdateProfileRequest
   ): Promise<AuthResponse['user']> {
-    return this.request<AuthResponse['user']>({
+    return this.requestData<AuthResponse['user']>({
       url: '/auth/profile',
-      method: 'PATCH',
+      method: 'PUT',
       data: userData,
     })
   }
 
   async refreshToken(): Promise<AuthResponse> {
-    return this.request<AuthResponse>({
+    return this.requestData<AuthResponse>({
       url: '/auth/refresh',
       method: 'POST',
     })
@@ -535,8 +504,8 @@ class ApiClient {
   // Expense endpoints
   async createExpense(
     expenseData: CreateExpenseRequest
-  ): Promise<{ success: boolean; data: Expense; message: string }> {
-    return this.request({
+  ): Promise<ApiResponse<Expense>> {
+    return this.request<Expense>({
       url: '/expenses',
       method: 'POST',
       data: expenseData,
@@ -545,16 +514,16 @@ class ApiClient {
 
   async getExpenses(
     params?: ExpenseQueryParams
-  ): Promise<BackendPaginatedResponse<Expense>> {
-    return this.requestBackendPaginated<Expense>({
+  ): Promise<ApiResponse<Expense[]>> {
+    return this.request<Expense[]>({
       url: '/expenses',
       method: 'GET',
       params,
     })
   }
 
-  async getExpense(id: string): Promise<{ success: boolean; data: Expense }> {
-    return this.request({
+  async getExpense(id: string): Promise<ApiResponse<Expense>> {
+    return this.request<Expense>({
       url: `/expenses/${id}`,
       method: 'GET',
     })
@@ -563,18 +532,16 @@ class ApiClient {
   async updateExpense(
     id: string,
     expenseData: UpdateExpenseRequest
-  ): Promise<{ success: boolean; data: Expense; message: string }> {
-    return this.request({
+  ): Promise<ApiResponse<Expense>> {
+    return this.request<Expense>({
       url: `/expenses/${id}`,
       method: 'PATCH',
       data: expenseData,
     })
   }
 
-  async deleteExpense(
-    id: string
-  ): Promise<{ success: boolean; message: string }> {
-    return this.request({
+  async deleteExpense(id: string): Promise<ApiResponse<null>> {
+    return this.request<null>({
       url: `/expenses/${id}`,
       method: 'DELETE',
     })
@@ -584,8 +551,8 @@ class ApiClient {
     id: string,
     status: string,
     notes?: string
-  ): Promise<{ success: boolean; data: Expense; message: string }> {
-    return this.request({
+  ): Promise<ApiResponse<Expense>> {
+    return this.request<Expense>({
       url: `/expenses/${id}/status`,
       method: 'PATCH',
       data: { status, notes },
@@ -595,16 +562,16 @@ class ApiClient {
   // Category endpoints
   async getCategories(
     params?: CategoryQueryParams
-  ): Promise<{ success: boolean; data: Category[] }> {
-    return this.request({
+  ): Promise<ApiResponse<Category[]>> {
+    return this.request<Category[]>({
       url: '/categories',
       method: 'GET',
       params,
     })
   }
 
-  async getCategory(id: string): Promise<{ success: boolean; data: Category }> {
-    return this.request({
+  async getCategory(id: string): Promise<ApiResponse<Category>> {
+    return this.request<Category>({
       url: `/categories/${id}`,
       method: 'GET',
     })
@@ -612,8 +579,8 @@ class ApiClient {
 
   async createCategory(
     categoryData: CreateCategoryRequest
-  ): Promise<{ success: boolean; data: Category; message: string }> {
-    return this.request({
+  ): Promise<ApiResponse<Category>> {
+    return this.request<Category>({
       url: '/categories',
       method: 'POST',
       data: categoryData,
@@ -623,8 +590,8 @@ class ApiClient {
   async updateCategory(
     id: string,
     categoryData: UpdateCategoryRequest
-  ): Promise<{ success: boolean; data: Category; message: string }> {
-    return this.request({
+  ): Promise<ApiResponse<Category>> {
+    return this.request<Category>({
       url: `/categories/${id}`,
       method: 'PUT',
       data: categoryData,
@@ -634,38 +601,32 @@ class ApiClient {
   async updateCategoryStatus(
     id: string,
     isActive: boolean
-  ): Promise<{ success: boolean; data: Category; message: string }> {
-    return this.request({
+  ): Promise<ApiResponse<Category>> {
+    return this.request<Category>({
       url: `/categories/${id}/status`,
       method: 'PUT',
       data: { isActive },
     })
   }
 
-  async deleteCategory(
-    id: string
-  ): Promise<{ success: boolean; message: string }> {
-    return this.request({
+  async deleteCategory(id: string): Promise<ApiResponse<null>> {
+    return this.request<null>({
       url: `/categories/${id}`,
       method: 'DELETE',
     })
   }
 
-  async getCategoryUsage(id: string): Promise<{
-    success: boolean
-    data: { categoryId: string; usageCount: number }
-  }> {
-    return this.request({
+  async getCategoryUsage(
+    id: string
+  ): Promise<ApiResponse<{ categoryId: string; usageCount: number }>> {
+    return this.request<{ categoryId: string; usageCount: number }>({
       url: `/categories/${id}/usage`,
       method: 'GET',
     })
   }
 
-  async getCategoryStatistics(): Promise<{
-    success: boolean
-    data: CategoryStatistics
-  }> {
-    return this.request({
+  async getCategoryStatistics(): Promise<ApiResponse<CategoryStatistics>> {
+    return this.request<CategoryStatistics>({
       url: '/categories/statistics',
       method: 'GET',
     })
@@ -674,39 +635,31 @@ class ApiClient {
   // Vendor endpoints
   async createVendor(
     vendorData: CreateVendorRequest
-  ): Promise<{ success: boolean; data: Vendor; message: string }> {
-    return this.request({
+  ): Promise<ApiResponse<Vendor>> {
+    return this.request<Vendor>({
       url: '/vendors',
       method: 'POST',
       data: vendorData,
     })
   }
 
-  async getVendors(params?: VendorQueryParams): Promise<{
-    success: boolean
-    data: {
-      vendors: Vendor[]
-      total: number
-      page: number
-      limit: number
-    }
-  }> {
-    return this.request({
+  async getVendors(params?: VendorQueryParams): Promise<ApiResponse<Vendor[]>> {
+    return this.request<Vendor[]>({
       url: '/vendors',
       method: 'GET',
       params,
     })
   }
 
-  async getActiveVendors(): Promise<{ success: boolean; data: Vendor[] }> {
-    return this.request({
+  async getActiveVendors(): Promise<ApiResponse<Vendor[]>> {
+    return this.request<Vendor[]>({
       url: '/vendors/active',
       method: 'GET',
     })
   }
 
-  async getVendor(id: string): Promise<{ success: boolean; data: Vendor }> {
-    return this.request({
+  async getVendor(id: string): Promise<ApiResponse<Vendor>> {
+    return this.request<Vendor>({
       url: `/vendors/${id}`,
       method: 'GET',
     })
@@ -715,27 +668,23 @@ class ApiClient {
   async updateVendor(
     id: string,
     vendorData: UpdateVendorRequest
-  ): Promise<{ success: boolean; data: Vendor; message: string }> {
-    return this.request({
+  ): Promise<ApiResponse<Vendor>> {
+    return this.request<Vendor>({
       url: `/vendors/${id}`,
       method: 'PATCH',
       data: vendorData,
     })
   }
 
-  async toggleVendorStatus(
-    id: string
-  ): Promise<{ success: boolean; data: Vendor; message: string }> {
-    return this.request({
+  async toggleVendorStatus(id: string): Promise<ApiResponse<Vendor>> {
+    return this.request<Vendor>({
       url: `/vendors/${id}/toggle-status`,
       method: 'PATCH',
     })
   }
 
-  async deleteVendor(
-    id: string
-  ): Promise<{ success: boolean; message: string }> {
-    return this.request({
+  async deleteVendor(id: string): Promise<ApiResponse<null>> {
+    return this.request<null>({
       url: `/vendors/${id}`,
       method: 'DELETE',
     })
@@ -748,16 +697,15 @@ class ApiClient {
       loaded: number
       total?: number
     }) => void
-  ): Promise<{
-    success: boolean
-    data: {
+  ): Promise<
+    ApiResponse<{
       id: string
       filename: string
       originalName: string
       mimeType: string
       size: number
-    }
-  }> {
+    }>
+  > {
     const formData = new FormData()
     formData.append('file', file)
 
@@ -772,9 +720,8 @@ class ApiClient {
     })
   }
 
-  async getFile(id: string): Promise<{
-    success: boolean
-    data: {
+  async getFile(id: string): Promise<
+    ApiResponse<{
       id: string
       filename: string
       originalName: string
@@ -782,16 +729,16 @@ class ApiClient {
       size: number
       googleDriveId: string
       googleDriveUrl: string
-    }
-  }> {
+    }>
+  > {
     return this.request({
       url: `/files/${id}`,
       method: 'GET',
     })
   }
 
-  async deleteFile(id: string): Promise<{ success: boolean; message: string }> {
-    return this.request({
+  async deleteFile(id: string): Promise<ApiResponse<null>> {
+    return this.request<null>({
       url: `/files/${id}`,
       method: 'DELETE',
     })
@@ -802,16 +749,18 @@ class ApiClient {
     status?: string,
     limit: number = 50,
     offset: number = 0
-  ): Promise<{ notifications: NotificationData[]; total: number }> {
-    return this.request({
+  ): Promise<
+    ApiResponse<{ notifications: NotificationData[]; total: number }>
+  > {
+    return this.request<{ notifications: NotificationData[]; total: number }>({
       url: '/notifications',
       method: 'GET',
       params: { status, limit, offset },
     })
   }
 
-  async getUnreadNotificationCount(): Promise<{ count: number }> {
-    return this.request({
+  async getUnreadNotificationCount(): Promise<ApiResponse<{ count: number }>> {
+    return this.request<{ count: number }>({
       url: '/notifications/unread-count',
       method: 'GET',
     })
@@ -819,8 +768,8 @@ class ApiClient {
 
   async markNotificationAsRead(
     notificationId: string
-  ): Promise<{ success: boolean }> {
-    return this.request({
+  ): Promise<ApiResponse<null>> {
+    return this.request<null>({
       url: `/notifications/${notificationId}/read`,
       method: 'PATCH',
     })
@@ -828,15 +777,15 @@ class ApiClient {
 
   async dismissNotification(
     notificationId: string
-  ): Promise<{ success: boolean }> {
-    return this.request({
+  ): Promise<ApiResponse<null>> {
+    return this.request<null>({
       url: `/notifications/${notificationId}/dismiss`,
       method: 'PATCH',
     })
   }
 
-  async markAllNotificationsAsRead(): Promise<{ success: boolean }> {
-    return this.request({
+  async markAllNotificationsAsRead(): Promise<ApiResponse<null>> {
+    return this.request<null>({
       url: '/notifications/mark-all-read',
       method: 'PATCH',
     })
@@ -845,19 +794,16 @@ class ApiClient {
   // Workflow endpoints
   async getExpenseStatusHistory(
     expenseId: string
-  ): Promise<{ success: boolean; data: ExpenseStatusHistoryData[] }> {
-    return this.request({
+  ): Promise<ApiResponse<ExpenseStatusHistoryData[]>> {
+    return this.request<ExpenseStatusHistoryData[]>({
       url: `/expenses/${expenseId}/status-history`,
       method: 'GET',
     })
   }
 
   // Dashboard and reporting endpoints
-  async getDashboardStats(): Promise<{
-    success: boolean
-    data: DashboardStats
-  }> {
-    return this.request({
+  async getDashboardStats(): Promise<ApiResponse<DashboardStats>> {
+    return this.request<DashboardStats>({
       url: '/dashboard/stats',
       method: 'GET',
     })
@@ -865,8 +811,8 @@ class ApiClient {
 
   async getReports(
     params: ReportQueryParams
-  ): Promise<{ success: boolean; data: ReportData }> {
-    return this.request({
+  ): Promise<ApiResponse<ReportData>> {
+    return this.request<ReportData>({
       url: '/reports',
       method: 'GET',
       params,
@@ -887,8 +833,8 @@ class ApiClient {
   async getExchangeRate(
     from: string,
     to: string
-  ): Promise<{ success: boolean; data: ExchangeRateData }> {
-    return this.request({
+  ): Promise<ApiResponse<ExchangeRateData>> {
+    return this.request<ExchangeRateData>({
       url: '/currency/exchange-rate',
       method: 'GET',
       params: { from, to },
@@ -899,8 +845,8 @@ class ApiClient {
     amount: number,
     from: string,
     to: string
-  ): Promise<{ success: boolean; data: CurrencyConversionData }> {
-    return this.request({
+  ): Promise<ApiResponse<CurrencyConversionData>> {
+    return this.request<CurrencyConversionData>({
       url: '/currency/convert',
       method: 'POST',
       data: { amount, from, to },

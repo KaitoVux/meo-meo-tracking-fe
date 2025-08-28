@@ -52,10 +52,10 @@ export function WorkflowPage() {
     try {
       setLoading(true)
       const response = await apiClient.getExpenses(filters)
-      setExpenses(response.data)
+      setExpenses(response.data || [])
 
       // Calculate stats
-      const newStats = response.data.reduce(
+      const newStats = (response.data || []).reduce(
         (acc, expense) => {
           acc.total++
           if (expense.status === 'SUBMITTED') acc.pending++
