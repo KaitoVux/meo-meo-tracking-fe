@@ -18,7 +18,7 @@ import { queryKeys } from '../query-keys'
  */
 export function useProfileQuery(options?: {
   enabled?: boolean
-  retry?: boolean | number | ((failureCount: number, error: any) => boolean)
+  retry?: boolean | number | ((failureCount: number, error: Error) => boolean)
 }) {
   const setFeatureLoading = useApiStore(state => state.setFeatureLoading)
   const { handleAuthError } = useApiError()
@@ -42,9 +42,9 @@ export function useProfileQuery(options?: {
     retry:
       options?.retry !== undefined
         ? options.retry
-        : (failureCount, error: any) => {
+        : (failureCount, error: Error) => {
             // Don't retry on 401 errors (unauthorized)
-            if (error?.status === 401) {
+            if ((error as any)?.status === 401) {
               return false
             }
             return failureCount < 2

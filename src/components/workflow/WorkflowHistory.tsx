@@ -5,7 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,7 +51,7 @@ export function WorkflowHistory({ expense }: WorkflowHistoryProps) {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       setLoading(true)
       // Note: This endpoint would need to be implemented in the backend
@@ -85,7 +85,7 @@ export function WorkflowHistory({ expense }: WorkflowHistoryProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [expense])
 
   useEffect(() => {
     loadHistory()

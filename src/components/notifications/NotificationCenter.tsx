@@ -32,7 +32,7 @@ export interface Notification {
     id: string
     paymentId: string
   }
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 interface NotificationCenterProps {

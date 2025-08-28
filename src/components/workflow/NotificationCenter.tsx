@@ -6,7 +6,7 @@ import {
   Info,
   AlertTriangle,
 } from 'lucide-react'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -66,7 +66,7 @@ export function NotificationCenter() {
   const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     if (!user) return
 
     try {
@@ -115,7 +115,7 @@ export function NotificationCenter() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     loadNotifications()

@@ -22,8 +22,7 @@ export const queryKeys = {
   expenses: {
     all: ['expenses'] as const,
     lists: () => [...queryKeys.expenses.all, 'list'] as const,
-    list: (filters?: Record<string, any>) =>
-      [...queryKeys.expenses.lists(), filters] as const,
+    list: (filters?: any) => [...queryKeys.expenses.lists(), filters] as const,
     details: () => [...queryKeys.expenses.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.expenses.details(), id] as const,
     statusHistory: (id: string) =>
@@ -34,8 +33,7 @@ export const queryKeys = {
   categories: {
     all: ['categories'] as const,
     lists: () => [...queryKeys.categories.all, 'list'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.categories.lists(), params] as const,
+    list: (params?: any) => [...queryKeys.categories.lists(), params] as const,
     details: () => [...queryKeys.categories.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.categories.details(), id] as const,
     usage: (id: string) =>
@@ -47,8 +45,7 @@ export const queryKeys = {
   vendors: {
     all: ['vendors'] as const,
     lists: () => [...queryKeys.vendors.all, 'list'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.vendors.lists(), params] as const,
+    list: (params?: any) => [...queryKeys.vendors.lists(), params] as const,
     active: () => [...queryKeys.vendors.lists(), 'active'] as const,
     details: () => [...queryKeys.vendors.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.vendors.details(), id] as const,
@@ -65,7 +62,7 @@ export const queryKeys = {
   notifications: {
     all: ['notifications'] as const,
     lists: () => [...queryKeys.notifications.all, 'list'] as const,
-    list: (params?: Record<string, any>) =>
+    list: (params?: any) =>
       [...queryKeys.notifications.lists(), params] as const,
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
   },
@@ -89,8 +86,7 @@ export const queryKeys = {
   reports: {
     all: ['reports'] as const,
     lists: () => [...queryKeys.reports.all, 'list'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.reports.lists(), params] as const,
+    list: (params?: any) => [...queryKeys.reports.lists(), params] as const,
     export: (params?: Record<string, unknown>) =>
       [...queryKeys.reports.all, 'export', params] as const,
   },

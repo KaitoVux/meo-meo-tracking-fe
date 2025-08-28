@@ -335,6 +335,25 @@ export interface ApiResponse<T = unknown> {
   message?: string
 }
 
+// Backend success response structure (matches what backend actually returns)
+export interface BackendResponse<T = unknown> {
+  success: boolean
+  data: T
+  message?: string
+}
+
+// Backend paginated response structure
+export interface BackendPaginatedResponse<T = unknown> {
+  success: boolean
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
 class ApiClient {
   private axiosInstance: AxiosInstance
   private token: string | null = null
@@ -386,14 +405,41 @@ class ApiClient {
 
     if (error.response) {
       // Server responded with error status
-      const responseData = error.response.data as {
-        code?: string
-        message?: string
-        details?: any
+      const responseData = error.response.data as Record<string, unknown>
+
+      // Handle backend error response structure
+      if (responseData && typeof responseData === 'object') {
+        // Check if it's a backend response with success: false
+        if ('success' in responseData && !responseData.success) {
+          const errorObj = responseData as {
+            error?: { code?: string; message?: string; details?: unknown }
+            message?: string
+          }
+          apiError.code =
+            errorObj.error?.code || `HTTP_${error.response.status}`
+          apiError.message =
+            errorObj.error?.message || errorObj.message || error.message
+          apiError.details = errorObj.error?.details
+        } else {
+          // Handle NestJS validation errors
+          const validationData = responseData as {
+            message?: unknown
+            code?: string
+            details?: unknown
+          }
+          if (validationData.message && Array.isArray(validationData.message)) {
+            apiError.code = 'VALIDATION_ERROR'
+            apiError.message = 'Validation failed'
+            apiError.details = { fields: validationData.message }
+          } else {
+            apiError.code =
+              (validationData.code as string) || `HTTP_${error.response.status}`
+            apiError.message =
+              (validationData.message as string) || error.message
+            apiError.details = validationData.details
+          }
+        }
       }
-      apiError.code = responseData?.code || `HTTP_${error.response.status}`
-      apiError.message = responseData?.message || error.message
-      apiError.details = responseData?.details
       apiError.status = error.response.status
     } else if (error.request) {
       // Request was made but no response received
@@ -413,13 +459,36 @@ class ApiClient {
   }
 
   private async request<T>(config: AxiosRequestConfig): Promise<T> {
-    // eslint-disable-next-line no-useless-catch
-    try {
-      const response = await this.axiosInstance.request<T>(config)
-      return response.data
-    } catch (error) {
-      throw error // Error is already handled by interceptor
+    const response = await this.axiosInstance.request<T>(config)
+    return response.data
+  }
+
+  // Helper method for backend responses that unwraps the data
+  private async requestBackend<T>(config: AxiosRequestConfig): Promise<T> {
+    const response =
+      await this.axiosInstance.request<BackendResponse<T>>(config)
+    const backendResponse = response.data
+
+    if (!backendResponse.success) {
+      throw new Error(backendResponse.message || 'Request failed')
     }
+
+    return backendResponse.data
+  }
+
+  // Helper method for paginated backend responses
+  private async requestBackendPaginated<T>(
+    config: AxiosRequestConfig
+  ): Promise<BackendPaginatedResponse<T>> {
+    const response =
+      await this.axiosInstance.request<BackendPaginatedResponse<T>>(config)
+    const backendResponse = response.data
+
+    if (!backendResponse.success) {
+      throw new Error('Request failed')
+    }
+
+    return backendResponse
   }
 
   // Authentication endpoints
@@ -476,8 +545,8 @@ class ApiClient {
 
   async getExpenses(
     params?: ExpenseQueryParams
-  ): Promise<PaginatedResponse<Expense>> {
-    return this.request({
+  ): Promise<BackendPaginatedResponse<Expense>> {
+    return this.requestBackendPaginated<Expense>({
       url: '/expenses',
       method: 'GET',
       params,

@@ -1,5 +1,5 @@
 import { Search, Users, Clock, CheckCircle, DollarSign } from 'lucide-react'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -48,7 +48,7 @@ export function WorkflowPage() {
     status: user?.role === 'ACCOUNTANT' ? 'SUBMITTED' : undefined,
   })
 
-  const loadExpenses = async () => {
+  const loadExpenses = useCallback(async () => {
     try {
       setLoading(true)
       const response = await apiClient.getExpenses(filters)
@@ -72,7 +72,7 @@ export function WorkflowPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   useEffect(() => {
     loadExpenses()
