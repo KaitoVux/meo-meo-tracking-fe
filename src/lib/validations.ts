@@ -88,7 +88,7 @@ export const expenseSchema = z.object({
   expenseMonth: z.string().min(1, 'Expense month is required'),
   type: z.enum(['IN', 'OUT']).default('OUT').optional(),
   vendorId: z.string().min(1, 'Vendor is required'),
-  category: z.string().min(1, 'Category is required'),
+  category: z.string().uuid('Category must be a valid UUID'),
   amount: z.number().min(0.01, 'Amount must be greater than 0'),
   amountBeforeVAT: z
     .number()

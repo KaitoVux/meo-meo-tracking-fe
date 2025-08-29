@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Upload, X, FileText } from 'lucide-react'
-import React, { useState, useCallback } from 'react'
+import { FileText, Upload, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useForm } from 'react-hook-form'
 
@@ -32,6 +32,7 @@ import {
 import { useUploadFileMutation } from '@/hooks/useFiles'
 import type { Expense } from '@/lib/api'
 import { expenseSchema, type ExpenseFormData } from '@/lib/validations'
+import { useAuthStore } from '@/store/auth'
 
 interface ExpenseFormProps {
   expense?: Expense
@@ -40,6 +41,9 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
+  // Auth store for current user
+  const { user } = useAuthStore()
+
   // TanStack Query hooks for data and mutations
   const { data: categoriesResponse, isLoading: categoriesLoading } =
     useCategoriesQuery()
@@ -78,7 +82,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
         new Date().toLocaleDateString('en-US', { month: 'long' }),
       type: expense?.type || 'OUT',
       vendorId: expense?.vendor?.id || '',
-      category: expense?.category || '',
+      category: '',
       amount: expense?.amount || 0,
       amountBeforeVAT: expense?.amountBeforeVAT || 0,
       vatPercentage: expense?.vatPercentage,
@@ -90,6 +94,16 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
       paymentMethod: expense?.paymentMethod || 'CASH',
     },
   })
+
+  // Update category field when categories are loaded and we have an existing expense
+  useEffect(() => {
+    if (expense?.category && categories.length > 0) {
+      const category = categories.find(cat => cat.name === expense.category)
+      if (category) {
+        form.setValue('category', category.id)
+      }
+    }
+  }, [expense?.category, categories, form])
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -152,10 +166,15 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
   }
 
   const handleSubmit = (data: ExpenseFormData) => {
+    if (!user?.id) {
+      console.error('User not authenticated')
+      return
+    }
+
     const expenseData = {
       ...data,
       invoiceFileId: uploadedFile?.id,
-      submitterId: 'current-user-id', // TODO: Get from auth context
+      submitterId: user.id,
     }
 
     if (expense) {
@@ -333,10 +352,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                           categories
                             .filter(category => category.isActive)
                             .map(category => (
-                              <SelectItem
-                                key={category.id}
-                                value={category.name}
-                              >
+                              <SelectItem key={category.id} value={category.id}>
                                 {category.name}
                               </SelectItem>
                             ))
