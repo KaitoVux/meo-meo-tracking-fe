@@ -1,16 +1,9 @@
-import { Check, ChevronsUpDown, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 import { VendorForm } from './VendorForm'
 
 import { Button } from '@/components/ui/button'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command'
 import {
   Dialog,
   DialogContent,
@@ -18,12 +11,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { apiClient, type Vendor } from '@/lib/api'
-import { cn } from '@/lib/utils'
 
 interface VendorSelectProps {
   value?: string
@@ -38,21 +32,16 @@ export function VendorSelect({
   placeholder = 'Select vendor...',
   disabled = false,
 }: VendorSelectProps) {
-  const [open, setOpen] = useState(false)
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
-  const selectedVendor = vendors.find(vendor => vendor.id === value)
-
-  const fetchVendors = async (search?: string) => {
+  const fetchVendors = async () => {
     try {
       setLoading(true)
       const response = await apiClient.getVendors({
-        search,
         status: 'ACTIVE',
-        limit: 50,
+        limit: 100,
         sortBy: 'name',
         sortOrder: 'ASC',
       })
@@ -68,24 +57,10 @@ export function VendorSelect({
   }
 
   useEffect(() => {
-    if (open) {
-      fetchVendors()
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (searchTerm) {
-      const timeoutId = setTimeout(() => {
-        fetchVendors(searchTerm)
-      }, 300)
-      return () => clearTimeout(timeoutId)
-    } else if (open) {
-      fetchVendors()
-    }
-  }, [searchTerm, open])
+    fetchVendors()
+  }, [])
 
   const handleCreateVendor = () => {
-    setOpen(false)
     setIsCreateDialogOpen(true)
   }
 
@@ -96,82 +71,53 @@ export function VendorSelect({
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-            disabled={disabled}
-          >
-            {selectedVendor ? selectedVendor.name : placeholder}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command>
-            <CommandInput
-              placeholder="Search vendors..."
-              value={searchTerm}
-              onValueChange={setSearchTerm}
+      <div className="space-y-2">
+        <Select
+          value={value}
+          onValueChange={onValueChange}
+          disabled={disabled || loading || vendors.length === 0}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue
+              placeholder={
+                loading
+                  ? 'Loading vendors...'
+                  : vendors.length === 0
+                    ? 'No vendors available'
+                    : placeholder
+              }
             />
-            <CommandEmpty>
-              {loading ? (
-                <div className="py-6 text-center text-sm">
-                  Loading vendors...
-                </div>
-              ) : (
-                <div className="py-6 text-center text-sm">
-                  <p>No vendors found.</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCreateVendor}
-                    className="mt-2"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add New Vendor
-                  </Button>
-                </div>
-              )}
-            </CommandEmpty>
-            <CommandGroup>
-              {vendors.map(vendor => (
-                <CommandItem
-                  key={vendor.id}
-                  value={vendor.id}
-                  onSelect={currentValue => {
-                    onValueChange(currentValue === value ? '' : currentValue)
-                    setOpen(false)
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === vendor.id ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium">{vendor.name}</div>
+          </SelectTrigger>
+          <SelectContent>
+            {!loading &&
+              vendors.length > 0 &&
+              vendors.map(vendor => (
+                <SelectItem key={vendor.id} value={vendor.id}>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{vendor.name}</span>
                     {vendor.contactInfo && (
-                      <div className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground">
                         {vendor.contactInfo}
-                      </div>
+                      </span>
                     )}
                   </div>
-                </CommandItem>
+                </SelectItem>
               ))}
-              {vendors.length > 0 && (
-                <CommandItem onSelect={handleCreateVendor}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Vendor
-                </CommandItem>
-              )}
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
+          </SelectContent>
+        </Select>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleCreateVendor}
+          disabled={disabled}
+          className="w-full"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add New Vendor
+        </Button>
+      </div>
 
       {/* Create Vendor Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
