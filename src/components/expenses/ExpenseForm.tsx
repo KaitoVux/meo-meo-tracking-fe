@@ -61,13 +61,20 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
     name: string
     size: number
   } | null>(
+    // Try invoiceFile object first, then fall back to invoiceFileId
     expense?.invoiceFile
       ? {
           id: expense.invoiceFile.id,
           name: expense.invoiceFile.originalName,
           size: expense.invoiceFile.size,
         }
-      : null
+      : expense?.invoiceFileId
+        ? {
+            id: expense.invoiceFileId,
+            name: 'Uploaded File', // We don't have the name, so use a placeholder
+            size: 0, // We don't have the size either
+          }
+        : null
   )
   const [isUploading, setIsUploading] = useState(false)
 
@@ -81,7 +88,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
         expense?.expenseMonth ||
         new Date().toLocaleDateString('en-US', { month: 'long' }),
       type: expense?.type || 'OUT',
-      vendorId: expense?.vendor?.id || '',
+      vendorId: expense?.vendorId || expense?.vendor?.id || '',
       category: '',
       amount: expense?.amount || 0,
       amountBeforeVAT: expense?.amountBeforeVAT || 0,
@@ -97,13 +104,20 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
 
   // Update category field when categories are loaded and we have an existing expense
   useEffect(() => {
-    if (expense?.category && categories.length > 0) {
-      const category = categories.find(cat => cat.name === expense.category)
-      if (category) {
-        form.setValue('category', category.id)
+    if (categories.length > 0 && expense) {
+      // First try to use categoryEntityId if available
+      if (expense.categoryEntityId) {
+        form.setValue('category', expense.categoryEntityId)
+      }
+      // Fallback to finding by category name (legacy support)
+      else if (expense.category) {
+        const category = categories.find(cat => cat.name === expense.category)
+        if (category) {
+          form.setValue('category', category.id)
+        }
       }
     }
-  }, [expense?.category, categories, form])
+  }, [expense?.category, expense?.categoryEntityId, categories, form])
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {

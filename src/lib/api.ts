@@ -124,7 +124,6 @@ export interface Expense {
   transactionDate: string
   expenseMonth: string
   type: 'IN' | 'OUT'
-  vendor: Vendor
   category: string
   amount: number
   amountBeforeVAT: number
@@ -136,14 +135,31 @@ export interface Expense {
   projectCostCenter?: string
   paymentMethod: 'CASH' | 'BANK_TRANSFER'
   status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'PAID' | 'CLOSED'
+
+  // Foreign key IDs for easier frontend consumption
+  submitterId: string
+  vendorId: string
+  categoryEntityId?: string
+  invoiceFileId?: string
+
+  // Audit fields
   createdAt: string
   updatedAt: string
-  submitter: {
+  deletedAt?: string
+  createdById?: string
+  updatedById?: string
+  deletedById?: string
+
+  // Populated relations (optional, included when requested)
+  submitter?: {
     id: string
     email: string
     firstName: string
     lastName: string
+    name?: string
   }
+  vendor?: Vendor
+  categoryEntity?: Category
   invoiceFile?: {
     id: string
     filename: string

@@ -227,11 +227,7 @@ export function ExpenseList({
                           {expense.type}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {typeof expense.vendor === 'string'
-                          ? expense.vendor
-                          : expense.vendor?.name || 'N/A'}
-                      </TableCell>
+                      <TableCell>{expense.vendor?.name || 'N/A'}</TableCell>
                       <TableCell>{expense.category}</TableCell>
                       <TableCell>
                         {formatCurrency(
@@ -267,8 +263,10 @@ export function ExpenseList({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {expense.submitter.firstName}{' '}
-                        {expense.submitter.lastName}
+                        {expense.submitter?.firstName &&
+                        expense.submitter?.lastName
+                          ? `${expense.submitter.firstName} ${expense.submitter.lastName}`
+                          : expense.submitter?.name || 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">

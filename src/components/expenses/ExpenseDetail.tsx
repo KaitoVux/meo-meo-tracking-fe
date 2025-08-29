@@ -163,9 +163,7 @@ export function ExpenseDetail({
                     Vendor
                   </span>
                   <p className="mt-1 font-medium">
-                    {typeof expense.vendor === 'string'
-                      ? expense.vendor
-                      : expense.vendor?.name || 'N/A'}
+                    {expense.vendor?.name || 'N/A'}
                   </p>
                 </div>
                 <div>
@@ -264,10 +262,12 @@ export function ExpenseDetail({
                 <User className="h-8 w-8 text-gray-400" />
                 <div>
                   <p className="font-medium">
-                    {expense.submitter.firstName} {expense.submitter.lastName}
+                    {expense.submitter?.firstName && expense.submitter?.lastName
+                      ? `${expense.submitter.firstName} ${expense.submitter.lastName}`
+                      : expense.submitter?.name || 'N/A'}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {expense.submitter.email}
+                    {expense.submitter?.email || 'N/A'}
                   </p>
                 </div>
               </div>

@@ -401,8 +401,8 @@ export function Dashboard() {
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback>
-                            {expense.submitter.firstName[0]}
-                            {expense.submitter.lastName[0]}
+                            {expense.submitter?.firstName?.[0] || 'U'}
+                            {expense.submitter?.lastName?.[0] || 'N'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -410,7 +410,7 @@ export function Dashboard() {
                             {expense.description}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {expense.vendor.name} •{' '}
+                            {expense.vendor?.name || 'N/A'} •{' '}
                             {format(new Date(expense.createdAt), 'MMM dd')}
                           </p>
                         </div>

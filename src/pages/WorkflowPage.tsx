@@ -351,8 +351,10 @@ export function WorkflowPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {expense.submitter.firstName}{' '}
-                        {expense.submitter.lastName}
+                        {expense.submitter?.firstName &&
+                        expense.submitter?.lastName
+                          ? `${expense.submitter.firstName} ${expense.submitter.lastName}`
+                          : expense.submitter?.name || 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button

@@ -63,7 +63,12 @@ export function WorkflowHistory({ expense }: WorkflowHistoryProps) {
           toStatus: 'DRAFT',
           notes: 'Expense created',
           createdAt: expense.createdAt,
-          changedBy: expense.submitter,
+          changedBy: expense.submitter || {
+            id: 'unknown',
+            firstName: 'Unknown',
+            lastName: 'User',
+            email: 'unknown@example.com',
+          },
         },
       ]
 
@@ -75,7 +80,12 @@ export function WorkflowHistory({ expense }: WorkflowHistoryProps) {
           toStatus: expense.status,
           notes: `Status changed to ${statusLabels[expense.status]}`,
           createdAt: expense.updatedAt,
-          changedBy: expense.submitter,
+          changedBy: expense.submitter || {
+            id: 'unknown',
+            firstName: 'Unknown',
+            lastName: 'User',
+            email: 'unknown@example.com',
+          },
         })
       }
 

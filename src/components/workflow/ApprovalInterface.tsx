@@ -121,7 +121,9 @@ export function ApprovalInterface({
               Submitter
             </Label>
             <p>
-              {expense.submitter.firstName} {expense.submitter.lastName}
+              {expense.submitter?.firstName && expense.submitter?.lastName
+                ? `${expense.submitter.firstName} ${expense.submitter.lastName}`
+                : expense.submitter?.name || 'N/A'}
             </p>
           </div>
           <div className="md:col-span-2">
