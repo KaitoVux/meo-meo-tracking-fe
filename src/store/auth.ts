@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
 import { apiClient } from '@/lib/api'
 
@@ -75,11 +75,18 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
       partialize: state => ({
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => state => {
+        // When the store is rehydrated from localStorage, set the token in the API client
+        if (state?.token) {
+          apiClient.setToken(state.token)
+        }
+      },
     }
   )
 )

@@ -13,8 +13,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     login,
     clearAuth,
+    checkAuth,
     isLoading: authStoreLoading,
   } = useAuthStore()
+
+  // Initialize auth on mount - this ensures the API client has the token
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   // TanStack Query for profile data - only when we have a token
   const {
