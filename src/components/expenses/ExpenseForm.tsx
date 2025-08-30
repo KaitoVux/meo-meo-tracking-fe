@@ -89,7 +89,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
         new Date().toLocaleDateString('en-US', { month: 'long' }),
       type: expense?.type || 'OUT',
       vendorId: expense?.vendorId || expense?.vendor?.id || '',
-      category: '',
+      categoryId: expense?.categoryEntityId || '',
       amount: expense?.amount || 0,
       amountBeforeVAT: expense?.amountBeforeVAT || 0,
       vatPercentage: expense?.vatPercentage,
@@ -102,22 +102,32 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
     },
   })
 
-  // Update category field when categories are loaded and we have an existing expense
+  // Update categoryId field when categories are loaded and we have an existing expense
   useEffect(() => {
     if (categories.length > 0 && expense) {
       // First try to use categoryEntityId if available
       if (expense.categoryEntityId) {
-        form.setValue('category', expense.categoryEntityId)
+        form.setValue('categoryId', expense.categoryEntityId)
+      }
+      // If we have categoryEntity populated, use its ID
+      else if (expense.categoryEntity) {
+        form.setValue('categoryId', expense.categoryEntity.id)
       }
       // Fallback to finding by category name (legacy support)
       else if (expense.category) {
         const category = categories.find(cat => cat.name === expense.category)
         if (category) {
-          form.setValue('category', category.id)
+          form.setValue('categoryId', category.id)
         }
       }
     }
-  }, [expense?.category, expense?.categoryEntityId, categories, form])
+  }, [
+    expense?.categoryEntityId,
+    expense?.categoryEntity,
+    expense?.category,
+    categories,
+    form,
+  ])
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -185,8 +195,10 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
       return
     }
 
+    const { categoryId, ...restData } = data
     const expenseData = {
-      ...data,
+      ...restData,
+      category: categoryId, // Map categoryId to category for API
       invoiceFileId: uploadedFile?.id,
       submitterId: user.id,
     }
@@ -340,14 +352,11 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
 
               <FormField
                 control={form.control}
-                name="category"
+                name="categoryId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category" />

@@ -2,12 +2,23 @@ import { useState } from 'react'
 
 import { ExpenseDetail, ExpenseForm, ExpenseList } from '@/components/expenses'
 import { apiClient, type Expense } from '@/lib/api'
+import { useExpenseQuery } from '@/lib/queries/expenses'
 
 type ViewMode = 'list' | 'create' | 'edit' | 'detail'
 
 export function ExpensesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null)
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(
+    null
+  )
+
+  // Fetch full expense details when editing or viewing
+  const { data: expenseDetailResponse, isLoading: isLoadingExpenseDetail } =
+    useExpenseQuery(selectedExpenseId || '')
+
+  // Use the detailed expense data when available
+  const expenseToUse = expenseDetailResponse?.data || selectedExpense
 
   const handleCreateExpense = () => {
     setSelectedExpense(null)
@@ -16,11 +27,13 @@ export function ExpensesPage() {
 
   const handleEditExpense = (expense: Expense) => {
     setSelectedExpense(expense)
+    setSelectedExpenseId(expense.id)
     setViewMode('edit')
   }
 
   const handleViewExpense = (expense: Expense) => {
     setSelectedExpense(expense)
+    setSelectedExpenseId(expense.id)
     setViewMode('detail')
   }
 
@@ -66,31 +79,45 @@ export function ExpensesPage() {
   const handleCancel = () => {
     setViewMode('list')
     setSelectedExpense(null)
+    setSelectedExpenseId(null)
   }
 
   const handleBackToList = () => {
     setViewMode('list')
     setSelectedExpense(null)
+    setSelectedExpenseId(null)
   }
 
   const handleEditFromDetail = () => {
     setViewMode('edit')
   }
 
-  if (viewMode === 'create' || viewMode === 'edit') {
+  if (viewMode === 'create') {
+    return (
+      <ExpenseForm onSubmit={handleSubmitExpense} onCancel={handleCancel} />
+    )
+  }
+
+  if (viewMode === 'edit') {
+    if (isLoadingExpenseDetail) {
+      return <div>Loading expense details...</div>
+    }
     return (
       <ExpenseForm
-        expense={selectedExpense || undefined}
+        expense={expenseToUse || undefined}
         onSubmit={handleSubmitExpense}
         onCancel={handleCancel}
       />
     )
   }
 
-  if (viewMode === 'detail' && selectedExpense) {
+  if (viewMode === 'detail' && expenseToUse) {
+    if (isLoadingExpenseDetail) {
+      return <div>Loading expense details...</div>
+    }
     return (
       <ExpenseDetail
-        expense={selectedExpense}
+        expense={expenseToUse}
         onBack={handleBackToList}
         onEdit={handleEditFromDetail}
         onStatusChange={handleStatusChange}
