@@ -420,7 +420,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                         type="number"
                         step="0.01"
                         placeholder="0.00"
-                        {...field}
+                        value={field.value}
                         onChange={e => {
                           const value = parseFloat(e.target.value) || 0
                           field.onChange(value)

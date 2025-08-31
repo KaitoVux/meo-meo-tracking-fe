@@ -114,7 +114,7 @@ export function ApprovalInterface({
             <Label className="text-sm font-medium text-gray-500">
               Category
             </Label>
-            <p>{expense.category}</p>
+            <p>{expense.categoryEntity?.name || expense.category}</p>
           </div>
           <div>
             <Label className="text-sm font-medium text-gray-500">
@@ -171,7 +171,8 @@ export function ApprovalInterface({
                     {typeof expense.vendor === 'string'
                       ? expense.vendor
                       : expense.vendor?.name || 'N/A'}{' '}
-                    • Category: {expense.category}
+                    • Category:{' '}
+                    {expense.categoryEntity?.name || expense.category}
                   </p>
                 </div>
 

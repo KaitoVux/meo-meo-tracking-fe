@@ -1,9 +1,15 @@
-import { Search, Plus, Eye, Edit, Trash2 } from 'lucide-react'
-import React, { useState } from 'react'
+import { Plus, Search } from 'lucide-react'
+import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  DropdownActions,
+  createDeleteAction,
+  createEditAction,
+  createViewAction,
+} from '@/components/ui/DropdownActions'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -199,7 +205,6 @@ export function ExpenseList({
                     <TableHead>VAT</TableHead>
                     <TableHead>Total Amount</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Submitter</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -228,7 +233,9 @@ export function ExpenseList({
                         </Badge>
                       </TableCell>
                       <TableCell>{expense.vendor?.name || 'N/A'}</TableCell>
-                      <TableCell>{expense.category}</TableCell>
+                      <TableCell>
+                        {expense.categoryEntity?.name || expense.category}
+                      </TableCell>
                       <TableCell>
                         {formatCurrency(
                           expense.amountBeforeVAT,
@@ -262,36 +269,20 @@ export function ExpenseList({
                           {statusLabels[expense.status]}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {expense.submitter?.firstName &&
-                        expense.submitter?.lastName
-                          ? `${expense.submitter.firstName} ${expense.submitter.lastName}`
-                          : expense.submitter?.name || 'N/A'}
-                      </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onViewExpense(expense)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onEditExpense(expense)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onDeleteExpense(expense)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <DropdownActions
+                          actions={[
+                            createViewAction(() => onViewExpense(expense)),
+                            createEditAction(
+                              () => onEditExpense(expense),
+                              expense.status === 'APPROVED'
+                            ),
+                            createDeleteAction(
+                              () => onDeleteExpense(expense),
+                              expense.status === 'APPROVED'
+                            ),
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
