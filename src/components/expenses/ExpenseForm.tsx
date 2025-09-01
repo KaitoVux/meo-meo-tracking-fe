@@ -14,6 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -394,14 +395,13 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                   <FormItem>
                     <FormLabel>Total Amount</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <FormattedNumberInput
                         placeholder="0.00"
-                        {...field}
-                        onChange={e =>
-                          field.onChange(parseFloat(e.target.value) || 0)
-                        }
+                        currency={form.watch('currency') as 'VND' | 'USD'}
+                        value={field.value}
+                        onValueChange={value => field.onChange(value || 0)}
+                        disabled
+                        inputProps={{ className: 'bg-muted' }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -416,21 +416,20 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                   <FormItem>
                     <FormLabel>Amount Before VAT</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <FormattedNumberInput
                         placeholder="0.00"
+                        currency={form.watch('currency') as 'VND' | 'USD'}
                         value={field.value}
-                        onChange={e => {
-                          const value = parseFloat(e.target.value) || 0
-                          field.onChange(value)
+                        onValueChange={value => {
+                          const numValue = value || 0
+                          field.onChange(numValue)
 
                           // Auto-calculate VAT amount if percentage is set
                           const vatPercentage = form.getValues('vatPercentage')
                           if (vatPercentage) {
-                            const vatAmount = (value * vatPercentage) / 100
+                            const vatAmount = (numValue * vatPercentage) / 100
                             form.setValue('vatAmount', vatAmount)
-                            form.setValue('amount', value + vatAmount)
+                            form.setValue('amount', numValue + vatAmount)
                           }
                         }}
                       />
@@ -481,14 +480,12 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                   <FormItem>
                     <FormLabel>VAT Amount</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <FormattedNumberInput
                         placeholder="0.00"
-                        {...field}
-                        onChange={e => {
-                          const vatAmount =
-                            parseFloat(e.target.value) || undefined
+                        currency={form.watch('currency') as 'VND' | 'USD'}
+                        value={field.value}
+                        onValueChange={value => {
+                          const vatAmount = value || undefined
                           field.onChange(vatAmount)
 
                           // Auto-calculate total amount
@@ -498,6 +495,8 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                             form.setValue('amount', amountBeforeVAT + vatAmount)
                           }
                         }}
+                        disabled
+                        inputProps={{ className: 'bg-muted' }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -537,15 +536,13 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                   <FormItem>
                     <FormLabel>Exchange Rate (Optional)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.0001"
+                      <FormattedNumberInput
                         placeholder="Enter exchange rate"
-                        {...field}
-                        onChange={e =>
-                          field.onChange(
-                            parseFloat(e.target.value) || undefined
-                          )
+                        currency={form.watch('currency') as 'VND' | 'USD'}
+                        value={field.value}
+                        decimalScale={4}
+                        onValueChange={value =>
+                          field.onChange(value || undefined)
                         }
                       />
                     </FormControl>
