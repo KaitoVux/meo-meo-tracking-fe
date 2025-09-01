@@ -27,6 +27,7 @@ interface WorkflowStatusTransitionProps {
   expense: Expense
   onStatusChange: (status: string, notes?: string) => Promise<void>
   isLoading?: boolean
+  className?: string
 }
 
 const statusConfig = {
@@ -80,6 +81,7 @@ export function WorkflowStatusTransition({
   expense,
   onStatusChange,
   isLoading = false,
+  className,
 }: WorkflowStatusTransitionProps) {
   const [selectedTransition, setSelectedTransition] = useState<string | null>(
     null
@@ -138,7 +140,7 @@ export function WorkflowStatusTransition({
   const CurrentIcon = currentConfig.icon
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <span>Workflow Status</span>
