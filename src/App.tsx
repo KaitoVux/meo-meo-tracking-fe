@@ -10,15 +10,17 @@ import { AuthProvider, ProtectedRoute } from './components/auth'
 import { AppLayout } from './components/layout/AppLayout'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { Dashboard } from './pages/Dashboard'
+import { ExpenseDetailPage } from './pages/ExpenseDetailPage'
+import { ExpenseEditPage } from './pages/ExpenseEditPage'
 import { ExpensesPage } from './pages/ExpensesPage'
 import { LoginPage } from './pages/LoginPage'
+import { NewExpensePage } from './pages/NewExpensePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
 import { VendorsPage } from './pages/VendorsPage'
 import { WorkflowPage } from './pages/WorkflowPage'
 
 // Placeholder components for other routes
-const NewExpense = () => <div>New Expense Page - Coming Soon</div>
 const Reports = () => <div>Reports Page - Coming Soon</div>
 const Import = () => <div>Import Page - Coming Soon</div>
 const Settings = () => <div>Settings Page - Coming Soon</div>
@@ -44,10 +46,12 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="expenses" element={<ExpensesPage />} />
+            <Route path="expenses/new" element={<NewExpensePage />} />
+            <Route path="expenses/:id" element={<ExpenseDetailPage />} />
+            <Route path="expenses/:id/edit" element={<ExpenseEditPage />} />
             <Route path="vendors" element={<VendorsPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="workflow" element={<WorkflowPage />} />
-            <Route path="expenses/new" element={<NewExpense />} />
             <Route path="reports" element={<Reports />} />
             <Route path="import" element={<Import />} />
             <Route path="profile" element={<ProfilePage />} />
