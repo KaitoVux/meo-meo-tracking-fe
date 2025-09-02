@@ -210,7 +210,11 @@ export function ExpenseList({
                 </TableHeader>
                 <TableBody>
                   {expenses.map(expense => (
-                    <TableRow key={expense.id}>
+                    <TableRow
+                      key={expense.id}
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => onViewExpense(expense)}
+                    >
                       <TableCell className="font-medium">
                         {expense.paymentId}
                         {expense.subId && (
