@@ -104,7 +104,7 @@ export const expenseSchema = z.object({
     .min(0, 'VAT amount must be greater than or equal to 0')
     .optional(),
   currency: z.enum(['VND', 'USD']),
-  exchangeRate: z.number().optional(),
+  exchangeRate: z.number().optional().nullable(),
   description: z.string().min(1, 'Description is required'),
   projectCostCenter: z.string().optional(),
   paymentMethod: z.enum(['CASH', 'BANK_TRANSFER']),

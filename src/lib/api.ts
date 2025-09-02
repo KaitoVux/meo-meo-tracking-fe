@@ -91,7 +91,7 @@ export interface CreateExpenseRequest {
   vatPercentage?: number | null
   vatAmount?: number
   currency: 'VND' | 'USD'
-  exchangeRate?: number
+  exchangeRate?: number | null
   description: string
   submitterId: string
   projectCostCenter?: string
@@ -110,7 +110,7 @@ export interface UpdateExpenseRequest {
   vatPercentage?: number | null
   vatAmount?: number
   currency?: 'VND' | 'USD'
-  exchangeRate?: number
+  exchangeRate?: number | null
   description?: string
   projectCostCenter?: string
   paymentMethod?: 'CASH' | 'BANK_TRANSFER'
@@ -130,7 +130,7 @@ export interface Expense {
   vatPercentage?: number
   vatAmount?: number
   currency: 'VND' | 'USD'
-  exchangeRate?: number
+  exchangeRate?: number | null
   description: string
   projectCostCenter?: string
   paymentMethod: 'CASH' | 'BANK_TRANSFER'

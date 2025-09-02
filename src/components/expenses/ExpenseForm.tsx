@@ -583,11 +583,13 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                       <FormattedNumberInput
                         placeholder="Enter exchange rate"
                         currency={form.watch('currency') as 'VND' | 'USD'}
-                        value={field.value}
+                        value={field.value ?? undefined}
                         decimalScale={4}
-                        onValueChange={value =>
-                          field.onChange(value || undefined)
-                        }
+                        onValueChange={value => {
+                          const exchangeRate =
+                            value === null || value === undefined ? null : value
+                          field.onChange(exchangeRate)
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
