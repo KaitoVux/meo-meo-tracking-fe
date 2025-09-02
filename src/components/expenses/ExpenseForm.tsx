@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FileText, Upload, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useForm } from 'react-hook-form'
 
@@ -53,7 +53,10 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
   const uploadFileMutation = useUploadFileMutation()
 
   // Extract data with fallbacks
-  const categories = categoriesResponse?.data || []
+  const categories = useMemo(
+    () => categoriesResponse?.data || [],
+    [categoriesResponse?.data]
+  )
   const isLoading =
     createExpenseMutation.isPending || updateExpenseMutation.isPending
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -103,6 +106,66 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
     },
   })
 
+  // Auto-calculate VAT amount and total when relevant fields change
+  const amountBeforeVAT = form.watch('amountBeforeVAT')
+  const vatPercentage = form.watch('vatPercentage')
+
+  useEffect(() => {
+    console.log(
+      '🔍 VAT Calculation Effect - amountBeforeVAT:',
+      amountBeforeVAT,
+      'vatPercentage:',
+      vatPercentage
+    )
+    console.log('📊 Current form values before update:', {
+      vatAmount: form.getValues('vatAmount'),
+      amount: form.getValues('amount'),
+    })
+
+    if (amountBeforeVAT !== undefined) {
+      if (vatPercentage && vatPercentage > 0) {
+        // Calculate with VAT
+        const vatAmount = (amountBeforeVAT * vatPercentage) / 100
+        console.log(
+          '✅ Setting with VAT - vatAmount:',
+          vatAmount,
+          'total:',
+          amountBeforeVAT + vatAmount
+        )
+        form.setValue('vatAmount', vatAmount, {
+          shouldValidate: true,
+          shouldDirty: true,
+        })
+        form.setValue('amount', amountBeforeVAT + vatAmount, {
+          shouldValidate: true,
+          shouldDirty: true,
+        })
+      } else {
+        // No VAT or VAT cleared - total equals amount before VAT
+        console.log(
+          '🚫 Setting without VAT - vatAmount: 0, total:',
+          amountBeforeVAT
+        )
+        form.setValue('vatAmount', 0, {
+          shouldValidate: true,
+          shouldDirty: true,
+        })
+        form.setValue('amount', amountBeforeVAT, {
+          shouldValidate: true,
+          shouldDirty: true,
+        })
+      }
+
+      // Log form values after update
+      setTimeout(() => {
+        console.log('📈 Form values after setValue:', {
+          vatAmount: form.getValues('vatAmount'),
+          amount: form.getValues('amount'),
+        })
+      }, 0)
+    }
+  }, [amountBeforeVAT, vatPercentage, form])
+
   // Update categoryId field when categories are loaded and we have an existing expense
   useEffect(() => {
     if (categories.length > 0 && expense) {
@@ -123,6 +186,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
       }
     }
   }, [
+    expense,
     expense?.categoryEntityId,
     expense?.categoryEntity,
     expense?.category,
@@ -400,8 +464,10 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                         currency={form.watch('currency') as 'VND' | 'USD'}
                         value={field.value}
                         onValueChange={value => field.onChange(value || 0)}
-                        disabled
-                        inputProps={{ className: 'bg-muted' }}
+                        inputProps={{
+                          readOnly: true,
+                          className: 'bg-muted cursor-not-allowed',
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -423,14 +489,6 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                         onValueChange={value => {
                           const numValue = value || 0
                           field.onChange(numValue)
-
-                          // Auto-calculate VAT amount if percentage is set
-                          const vatPercentage = form.getValues('vatPercentage')
-                          if (vatPercentage) {
-                            const vatAmount = (numValue * vatPercentage) / 100
-                            form.setValue('vatAmount', vatAmount)
-                            form.setValue('amount', numValue + vatAmount)
-                          }
                         }}
                       />
                     </FormControl>
@@ -451,20 +509,12 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                         step="0.01"
                         placeholder="0.00"
                         {...field}
+                        value={field.value ?? ''}
                         onChange={e => {
+                          const value = e.target.value
                           const percentage =
-                            parseFloat(e.target.value) || undefined
+                            value === '' ? null : parseFloat(value) || null
                           field.onChange(percentage)
-
-                          // Auto-calculate VAT amount and total
-                          const amountBeforeVAT =
-                            form.getValues('amountBeforeVAT')
-                          if (percentage && amountBeforeVAT) {
-                            const vatAmount =
-                              (amountBeforeVAT * percentage) / 100
-                            form.setValue('vatAmount', vatAmount)
-                            form.setValue('amount', amountBeforeVAT + vatAmount)
-                          }
                         }}
                       />
                     </FormControl>
@@ -485,18 +535,12 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                         currency={form.watch('currency') as 'VND' | 'USD'}
                         value={field.value}
                         onValueChange={value => {
-                          const vatAmount = value || undefined
-                          field.onChange(vatAmount)
-
-                          // Auto-calculate total amount
-                          const amountBeforeVAT =
-                            form.getValues('amountBeforeVAT')
-                          if (vatAmount && amountBeforeVAT) {
-                            form.setValue('amount', amountBeforeVAT + vatAmount)
-                          }
+                          field.onChange(value || 0)
                         }}
-                        disabled
-                        inputProps={{ className: 'bg-muted' }}
+                        inputProps={{
+                          readOnly: true,
+                          className: 'bg-muted cursor-not-allowed',
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

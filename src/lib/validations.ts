@@ -97,6 +97,7 @@ export const expenseSchema = z.object({
     .number()
     .min(0)
     .max(100, 'VAT percentage must be between 0 and 100')
+    .nullable()
     .optional(),
   vatAmount: z
     .number()

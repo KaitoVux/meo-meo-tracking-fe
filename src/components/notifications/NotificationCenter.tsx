@@ -63,7 +63,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
       setLoading(true)
       const response = await apiClient.getNotifications()
       setNotifications(
-        response.notifications.map(notification => ({
+        response.data?.notifications?.map(notification => ({
           id: notification.id,
           title: notification.title,
           message: notification.message,
@@ -75,7 +75,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
           createdAt: notification.createdAt,
           readAt: notification.readAt,
           priority: notification.priority,
-        }))
+        })) || []
       )
     } catch (error) {
       console.error('Failed to load notifications:', error)
@@ -87,7 +87,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   const loadUnreadCount = async () => {
     try {
       const response = await apiClient.getUnreadNotificationCount()
-      setUnreadCount(response.count)
+      setUnreadCount(response.data?.count || 0)
     } catch (error) {
       console.error('Failed to load unread count:', error)
     }

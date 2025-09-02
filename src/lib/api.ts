@@ -88,7 +88,7 @@ export interface CreateExpenseRequest {
   category: string
   amount: number
   amountBeforeVAT: number
-  vatPercentage?: number
+  vatPercentage?: number | null
   vatAmount?: number
   currency: 'VND' | 'USD'
   exchangeRate?: number
@@ -107,7 +107,7 @@ export interface UpdateExpenseRequest {
   category?: string
   amount?: number
   amountBeforeVAT?: number
-  vatPercentage?: number
+  vatPercentage?: number | null
   vatAmount?: number
   currency?: 'VND' | 'USD'
   exchangeRate?: number

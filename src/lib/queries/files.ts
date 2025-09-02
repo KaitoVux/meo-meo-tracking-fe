@@ -72,10 +72,12 @@ export function useUploadFileMutation() {
     },
     onSuccess: data => {
       // Cache the uploaded file data
-      queryClient.setQueryData(queryKeys.files.detail(data.data.id), {
-        success: true,
-        data: data.data,
-      })
+      if (data.data) {
+        queryClient.setQueryData(queryKeys.files.detail(data.data.id), {
+          success: true,
+          data: data.data,
+        })
+      }
     },
   })
 }
