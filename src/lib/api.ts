@@ -95,7 +95,7 @@ export interface CreateExpenseRequest {
   description: string
   submitterId: string
   projectCostCenter?: string
-  paymentMethod: 'CASH' | 'BANK_TRANSFER'
+  paymentMethod: 'BANK_TRANSFER' | 'PETTY_CASH' | 'CREDIT_CARD'
   invoiceFileId?: string
 }
 
@@ -113,7 +113,7 @@ export interface UpdateExpenseRequest {
   exchangeRate?: number | null
   description?: string
   projectCostCenter?: string
-  paymentMethod?: 'CASH' | 'BANK_TRANSFER'
+  paymentMethod?: 'BANK_TRANSFER' | 'PETTY_CASH' | 'CREDIT_CARD'
   invoiceFileId?: string
 }
 
@@ -133,7 +133,7 @@ export interface Expense {
   exchangeRate?: number | null
   description: string
   projectCostCenter?: string
-  paymentMethod: 'CASH' | 'BANK_TRANSFER'
+  paymentMethod: 'BANK_TRANSFER' | 'PETTY_CASH' | 'CREDIT_CARD'
   status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'PAID' | 'CLOSED'
 
   // Foreign key IDs for easier frontend consumption

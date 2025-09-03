@@ -107,7 +107,7 @@ export const expenseSchema = z.object({
   exchangeRate: z.number().optional().nullable(),
   description: z.string().min(1, 'Description is required'),
   projectCostCenter: z.string().optional(),
-  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER']),
+  paymentMethod: z.enum(['BANK_TRANSFER', 'PETTY_CASH', 'CREDIT_CARD']),
   invoiceFileId: z.string().optional(),
 })
 

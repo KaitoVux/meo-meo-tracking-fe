@@ -102,7 +102,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
       exchangeRate: expense?.exchangeRate,
       description: expense?.description || '',
       projectCostCenter: expense?.projectCostCenter || '',
-      paymentMethod: expense?.paymentMethod || 'CASH',
+      paymentMethod: expense?.paymentMethod || 'BANK_TRANSFER',
     },
   })
 
@@ -613,10 +613,11 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="CASH">Cash</SelectItem>
                         <SelectItem value="BANK_TRANSFER">
                           Bank Transfer
                         </SelectItem>
+                        <SelectItem value="PETTY_CASH">Petty Cash</SelectItem>
+                        <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

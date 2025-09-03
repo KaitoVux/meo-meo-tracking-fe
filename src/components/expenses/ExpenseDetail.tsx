@@ -175,9 +175,11 @@ export function ExpenseDetail({
                     </span>
                   </div>
                   <p className="font-medium">
-                    {expense.paymentMethod === 'CASH'
-                      ? 'Cash'
-                      : 'Bank Transfer'}
+                    {expense.paymentMethod === 'BANK_TRANSFER'
+                      ? 'Bank Transfer'
+                      : expense.paymentMethod === 'PETTY_CASH'
+                        ? 'Petty Cash'
+                        : 'Credit Card'}
                   </p>
                 </div>
 
