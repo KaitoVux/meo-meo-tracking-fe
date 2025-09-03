@@ -83,33 +83,51 @@ export const vendorSchema = z.object({
 })
 
 // Expense form validation schema
-export const expenseSchema = z.object({
-  transactionDate: z.string().min(1, 'Transaction date is required'),
-  expenseMonth: z.string().min(1, 'Expense month is required'),
-  type: z.enum(['IN', 'OUT']).default('OUT').optional(),
-  vendorId: z.string().min(1, 'Vendor is required'),
-  categoryId: z.string().uuid('Category must be a valid UUID'),
-  amount: z.number().min(0.01, 'Amount must be greater than 0'),
-  amountBeforeVAT: z
-    .number()
-    .min(0.01, 'Amount before VAT must be greater than 0'),
-  vatPercentage: z
-    .number()
-    .min(0)
-    .max(100, 'VAT percentage must be between 0 and 100')
-    .nullable()
-    .optional(),
-  vatAmount: z
-    .number()
-    .min(0, 'VAT amount must be greater than or equal to 0')
-    .optional(),
-  currency: z.enum(['VND', 'USD']),
-  exchangeRate: z.number().optional().nullable(),
-  description: z.string().min(1, 'Description is required'),
-  projectCostCenter: z.string().optional(),
-  paymentMethod: z.enum(['BANK_TRANSFER', 'PETTY_CASH', 'CREDIT_CARD']),
-  invoiceFileId: z.string().optional(),
-})
+export const expenseSchema = z
+  .object({
+    transactionDate: z.string().min(1, 'Transaction date is required'),
+    expenseMonth: z.string().min(1, 'Expense month is required'),
+    type: z.enum(['IN', 'OUT']).default('OUT').optional(),
+    vendorId: z.string().min(1, 'Vendor is required'),
+    categoryId: z.string().uuid('Category must be a valid UUID'),
+    amount: z.number().min(0.01, 'Amount must be greater than 0'),
+    amountBeforeVAT: z
+      .number()
+      .min(0.01, 'Amount before VAT must be greater than 0'),
+    vatPercentage: z
+      .number()
+      .min(0)
+      .max(100, 'VAT percentage must be between 0 and 100')
+      .nullable()
+      .optional(),
+    vatAmount: z
+      .number()
+      .min(0, 'VAT amount must be greater than or equal to 0')
+      .optional(),
+    currency: z.enum(['VND', 'USD']),
+    exchangeRate: z.number().optional().nullable(),
+    description: z.string().min(1, 'Description is required'),
+    projectCostCenter: z.string().optional(),
+    paymentMethod: z.enum(['BANK_TRANSFER', 'PETTY_CASH', 'CREDIT_CARD']),
+    invoiceFileId: z.string().optional(),
+  })
+  .refine(
+    data => {
+      // Exchange rate is required when currency is USD
+      if (data.currency === 'USD') {
+        return (
+          data.exchangeRate !== null &&
+          data.exchangeRate !== undefined &&
+          data.exchangeRate > 0
+        )
+      }
+      return true
+    },
+    {
+      message: 'Exchange rate is required when currency is USD',
+      path: ['exchangeRate'],
+    }
+  )
 
 // Category form validation schema
 export const categorySchema = z.object({

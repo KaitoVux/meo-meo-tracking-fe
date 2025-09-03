@@ -166,6 +166,14 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
     }
   }, [amountBeforeVAT, vatPercentage, form])
 
+  // Clear exchange rate when currency changes from USD to VND
+  const currency = form.watch('currency')
+  useEffect(() => {
+    if (currency === 'VND') {
+      form.setValue('exchangeRate', null)
+    }
+  }, [currency, form])
+
   // Update categoryId field when categories are loaded and we have an existing expense
   useEffect(() => {
     if (categories.length > 0 && expense) {
@@ -573,29 +581,33 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="exchangeRate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Exchange Rate (Optional)</FormLabel>
-                    <FormControl>
-                      <FormattedNumberInput
-                        placeholder="Enter exchange rate"
-                        currency={form.watch('currency') as 'VND' | 'USD'}
-                        value={field.value ?? undefined}
-                        decimalScale={4}
-                        onValueChange={value => {
-                          const exchangeRate =
-                            value === null || value === undefined ? null : value
-                          field.onChange(exchangeRate)
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {form.watch('currency') === 'USD' && (
+                <FormField
+                  control={form.control}
+                  name="exchangeRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Exchange Rate (Required for USD)</FormLabel>
+                      <FormControl>
+                        <FormattedNumberInput
+                          placeholder="Enter exchange rate"
+                          currency={form.watch('currency') as 'VND' | 'USD'}
+                          value={field.value ?? undefined}
+                          decimalScale={4}
+                          onValueChange={value => {
+                            const exchangeRate =
+                              value === null || value === undefined
+                                ? null
+                                : value
+                            field.onChange(exchangeRate)
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
