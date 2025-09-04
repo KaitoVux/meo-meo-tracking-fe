@@ -27,6 +27,8 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.expenses.details(), id] as const,
     statusHistory: (id: string) =>
       [...queryKeys.expenses.detail(id), 'statusHistory'] as const,
+    availableTransitions: (id: string) =>
+      [...queryKeys.expenses.detail(id), 'availableTransitions'] as const,
   },
 
   // Category queries

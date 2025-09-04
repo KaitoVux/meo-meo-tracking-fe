@@ -1,202 +1,180 @@
 import {
-  CheckCircle,
   Clock,
   AlertCircle,
   DollarSign,
   Archive,
-  ArrowRight,
+  ChevronRight,
 } from 'lucide-react'
 import React from 'react'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { type Expense } from '@/lib/api'
 
 interface WorkflowVisualizationProps {
   expense: Expense
+  onStatusChange?: (status: string, notes?: string) => void
+  availableTransitions?: string[]
 }
 
-const workflowSteps = [
-  {
-    status: 'DRAFT',
+const statusConfig = {
+  DRAFT: {
     label: 'Draft',
     icon: Clock,
     description: 'Expense created',
+    color: 'gray',
   },
-  {
-    status: 'SUBMITTED',
-    label: 'Submitted',
+  IN_PROGRESS: {
+    label: 'In Progress',
     icon: AlertCircle,
-    description: 'Awaiting approval',
+    description: 'Being processed',
+    color: 'blue',
   },
-  {
-    status: 'APPROVED',
-    label: 'Approved',
-    icon: CheckCircle,
-    description: 'Ready for payment',
-  },
-  {
-    status: 'PAID',
+  PAID: {
     label: 'Paid',
     icon: DollarSign,
-    description: 'Payment processed',
+    description: 'Payment completed',
+    color: 'green',
   },
-  {
-    status: 'CLOSED',
-    label: 'Closed',
+  ON_HOLD: {
+    label: 'On Hold',
     icon: Archive,
-    description: 'Expense complete',
+    description: 'Temporarily paused',
+    color: 'yellow',
   },
-]
+} as const
 
-const getStepStatus = (stepStatus: string, currentStatus: string) => {
-  const stepIndex = workflowSteps.findIndex(step => step.status === stepStatus)
-  const currentIndex = workflowSteps.findIndex(
-    step => step.status === currentStatus
-  )
+const getStatusStyles = (color: string, isCurrent: boolean) => {
+  const baseColors = {
+    gray: isCurrent
+      ? 'bg-gray-100 border-gray-300 ring-2 ring-gray-400'
+      : 'bg-gray-50 border-gray-200',
+    blue: isCurrent
+      ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-400'
+      : 'bg-blue-50 border-blue-200',
+    green: isCurrent
+      ? 'bg-green-100 border-green-300 ring-2 ring-green-400'
+      : 'bg-green-50 border-green-200',
+    yellow: isCurrent
+      ? 'bg-yellow-100 border-yellow-300 ring-2 ring-yellow-400'
+      : 'bg-yellow-50 border-yellow-200',
+  }
 
-  if (stepIndex < currentIndex) return 'completed'
-  if (stepIndex === currentIndex) return 'current'
-  return 'pending'
-}
+  const iconColors = {
+    gray: isCurrent ? 'bg-gray-600 text-white' : 'bg-gray-400 text-white',
+    blue: isCurrent ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white',
+    green: isCurrent ? 'bg-green-600 text-white' : 'bg-green-500 text-white',
+    yellow: isCurrent ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white',
+  }
 
-const getStepStyles = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return {
-        container: 'bg-green-50 border-green-200',
-        icon: 'bg-green-500 text-white',
-        text: 'text-green-700',
-      }
-    case 'current':
-      return {
-        container: 'bg-blue-50 border-blue-200 ring-2 ring-blue-300',
-        icon: 'bg-blue-500 text-white',
-        text: 'text-blue-700',
-      }
-    default:
-      return {
-        container: 'bg-gray-50 border-gray-200',
-        icon: 'bg-gray-300 text-gray-600',
-        text: 'text-gray-500',
-      }
+  const textColors = {
+    gray: isCurrent ? 'text-gray-800' : 'text-gray-600',
+    blue: isCurrent ? 'text-blue-800' : 'text-blue-600',
+    green: isCurrent ? 'text-green-800' : 'text-green-600',
+    yellow: isCurrent ? 'text-yellow-800' : 'text-yellow-600',
+  }
+
+  return {
+    container: baseColors[color as keyof typeof baseColors],
+    icon: iconColors[color as keyof typeof iconColors],
+    text: textColors[color as keyof typeof textColors],
   }
 }
 
-export function WorkflowVisualization({ expense }: WorkflowVisualizationProps) {
-  const currentStatus = expense.status
+export function WorkflowVisualization({
+  expense,
+  onStatusChange,
+  availableTransitions = [],
+}: WorkflowVisualizationProps) {
+  const currentStatus = expense.status as keyof typeof statusConfig
+  const currentConfig = statusConfig[currentStatus]
+  const CurrentIcon = currentConfig.icon
+
+  const handleTransition = (newStatus: string) => {
+    if (onStatusChange) {
+      onStatusChange(newStatus)
+    }
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Workflow Progress</CardTitle>
+        <CardTitle>Current Status</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Desktop View - Horizontal */}
-          <div className="hidden md:block">
-            <div className="flex items-center justify-between">
-              {workflowSteps.map((step, _index) => {
-                const stepStatus = getStepStatus(step.status, currentStatus)
-                const styles = getStepStyles(stepStatus)
-                const StepIcon = step.icon
-
-                return (
-                  <React.Fragment key={step.status}>
-                    <div className="flex flex-col items-center space-y-2">
-                      <div
-                        className={`p-3 rounded-full border-2 transition-all duration-200 ${styles.container}`}
-                      >
-                        <div className={`p-2 rounded-full ${styles.icon}`}>
-                          <StepIcon className="h-4 w-4" />
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <p className={`text-sm font-medium ${styles.text}`}>
-                          {step.label}
-                        </p>
-                        <p className="text-xs text-gray-500 max-w-20">
-                          {step.description}
-                        </p>
-                      </div>
-                      {stepStatus === 'current' && (
-                        <Badge variant="default" className="text-xs">
-                          Current
-                        </Badge>
-                      )}
-                    </div>
-                    {_index < workflowSteps.length - 1 && (
-                      <div className="flex-1 flex items-center justify-center">
-                        <ArrowRight
-                          className={`h-5 w-5 ${
-                            getStepStatus(
-                              workflowSteps[_index + 1].status,
-                              currentStatus
-                            ) === 'completed' ||
-                            getStepStatus(
-                              workflowSteps[_index + 1].status,
-                              currentStatus
-                            ) === 'current'
-                              ? 'text-blue-500'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      </div>
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Mobile View - Vertical */}
-          <div className="md:hidden space-y-3">
-            {workflowSteps.map((step, _index) => {
-              const stepStatus = getStepStatus(step.status, currentStatus)
-              const styles = getStepStyles(stepStatus)
-              const StepIcon = step.icon
-
-              return (
-                <div key={step.status} className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-full ${styles.icon}`}>
-                    <StepIcon className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <p className={`font-medium ${styles.text}`}>
-                        {step.label}
-                      </p>
-                      {stepStatus === 'current' && (
-                        <Badge variant="default" className="text-xs">
-                          Current
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-500">{step.description}</p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Progress Summary */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Progress:</span>
-              <span className="font-medium">
-                {workflowSteps.findIndex(
-                  step => step.status === currentStatus
-                ) + 1}{' '}
-                of {workflowSteps.length} steps
-              </span>
-            </div>
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+          {/* Current Status - Center Focus */}
+          <div className="flex flex-col items-center space-y-4">
+            <div
+              className={`p-4 rounded-full border-2 transition-all duration-200 ${getStatusStyles(currentConfig.color, true).container}`}
+            >
               <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{
-                  width: `${((workflowSteps.findIndex(step => step.status === currentStatus) + 1) / workflowSteps.length) * 100}%`,
-                }}
-              />
+                className={`p-3 rounded-full ${getStatusStyles(currentConfig.color, true).icon}`}
+              >
+                <CurrentIcon className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center space-x-2 mb-1">
+                <h3
+                  className={`text-lg font-semibold ${getStatusStyles(currentConfig.color, true).text}`}
+                >
+                  {currentConfig.label}
+                </h3>
+                <Badge variant="default" className="text-xs">
+                  Current
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-600">
+                {currentConfig.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Available Transitions */}
+          {availableTransitions.length > 0 && onStatusChange && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-gray-700 text-center">
+                Available Actions
+              </h4>
+              <div className="flex flex-wrap justify-center gap-3">
+                {availableTransitions.map(status => {
+                  const config =
+                    statusConfig[status as keyof typeof statusConfig]
+                  const TransitionIcon = config.icon
+                  const styles = getStatusStyles(config.color, false)
+
+                  return (
+                    <Button
+                      key={status}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTransition(status)}
+                      className={`flex items-center space-x-2 ${styles.container} hover:ring-2 hover:ring-offset-1`}
+                    >
+                      <div className={`p-1 rounded-full ${styles.icon}`}>
+                        <TransitionIcon className="h-3 w-3" />
+                      </div>
+                      <span className={styles.text}>
+                        Move to {config.label}
+                      </span>
+                      <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Status Info */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <p className="text-xs text-gray-500">
+                {currentStatus === 'PAID'
+                  ? 'Final status - no further changes allowed'
+                  : `${availableTransitions.length} transition${availableTransitions.length !== 1 ? 's' : ''} available`}
+              </p>
             </div>
           </div>
         </div>

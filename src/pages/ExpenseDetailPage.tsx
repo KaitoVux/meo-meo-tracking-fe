@@ -1,14 +1,17 @@
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { ExpenseDetail } from '@/components/expenses'
-import { apiClient } from '@/lib/api'
-import { useExpenseQuery } from '@/lib/queries/expenses'
+import {
+  useExpenseQuery,
+  useUpdateExpenseStatusMutation,
+} from '@/lib/queries/expenses'
 
 export function ExpenseDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const { data: expenseResponse, isLoading, error } = useExpenseQuery(id || '')
+  const updateStatusMutation = useUpdateExpenseStatusMutation()
 
   const handleBack = () => {
     navigate('/expenses')
@@ -18,12 +21,11 @@ export function ExpenseDetailPage() {
     navigate(`/expenses/${id}/edit`)
   }
 
-  const handleStatusChange = async (status: string, _notes?: string) => {
+  const handleStatusChange = async (status: string, notes?: string) => {
     if (!id) return
 
     try {
-      await apiClient.updateExpenseStatus(id, status)
-      // The query will automatically refetch and update the UI
+      await updateStatusMutation.mutateAsync({ id, status, notes })
     } catch (error) {
       console.error('Failed to update expense status:', error)
       throw error

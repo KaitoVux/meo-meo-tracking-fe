@@ -437,11 +437,11 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                       </FormControl>
                       <SelectContent>
                         {categoriesLoading ? (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="loading" disabled>
                             Loading categories...
                           </SelectItem>
                         ) : categories.length === 0 ? (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="empty" disabled>
                             No categories available
                           </SelectItem>
                         ) : (

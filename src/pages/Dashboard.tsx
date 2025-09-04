@@ -104,14 +104,14 @@ export function Dashboard() {
 
   // Prepare chart data
   const categoryChartData = useMemo(() => {
-    return stats.expensesByCategory.map((item, index) => ({
+    return (stats.expensesByCategory || []).map((item, index) => ({
       ...item,
       fill: CHART_COLORS[index % CHART_COLORS.length],
     }))
   }, [stats.expensesByCategory])
 
   const statusChartData = useMemo(() => {
-    return Object.entries(stats.expensesByStatus).map(
+    return Object.entries(stats.expensesByStatus || {}).map(
       ([status, count], index) => ({
         status,
         count,
@@ -255,7 +255,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${stats.monthlyAmount.toLocaleString()}
+              ${(stats.monthlyAmount || 0).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground flex items-center">
               {monthlyChange.isPositive ? (
@@ -421,7 +421,7 @@ export function Dashboard() {
                         </p>
                         <Badge
                           variant={
-                            expense.status === 'APPROVED'
+                            expense.status === 'IN_PROGRESS'
                               ? 'default'
                               : expense.status === 'PAID'
                                 ? 'secondary'

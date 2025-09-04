@@ -1,10 +1,4 @@
-import {
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  DollarSign,
-  Archive,
-} from 'lucide-react'
+import { Clock, AlertCircle, DollarSign, Archive } from 'lucide-react'
 import React, { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -35,46 +29,40 @@ const statusConfig = {
     label: 'Draft',
     icon: Clock,
     color: 'bg-gray-500',
-    nextStates: ['SUBMITTED'],
+    nextStates: ['IN_PROGRESS', 'ON_HOLD'],
     description: 'Expense is being prepared',
   },
-  SUBMITTED: {
-    label: 'Submitted',
+  IN_PROGRESS: {
+    label: 'In Progress',
     icon: AlertCircle,
     color: 'bg-blue-500',
-    nextStates: ['APPROVED', 'DRAFT'],
-    description: 'Waiting for approval',
-  },
-  APPROVED: {
-    label: 'Approved',
-    icon: CheckCircle,
-    color: 'bg-green-500',
-    nextStates: ['PAID', 'SUBMITTED'],
-    description: 'Approved for payment',
+    nextStates: ['DRAFT', 'PAID', 'ON_HOLD'],
+    description: 'Being processed',
   },
   PAID: {
     label: 'Paid',
     icon: DollarSign,
-    color: 'bg-purple-500',
-    nextStates: ['CLOSED'],
-    description: 'Payment has been processed',
-  },
-  CLOSED: {
-    label: 'Closed',
-    icon: Archive,
-    color: 'bg-gray-600',
+    color: 'bg-green-500',
     nextStates: [],
-    description: 'Expense is complete',
+    description: 'Payment completed (final state)',
+  },
+  ON_HOLD: {
+    label: 'On Hold',
+    icon: Archive,
+    color: 'bg-red-500',
+    nextStates: ['DRAFT', 'IN_PROGRESS'],
+    description: 'Temporarily paused',
   },
 } as const
 
 const transitionLabels = {
-  'DRAFT->SUBMITTED': 'Submit for Approval',
-  'SUBMITTED->APPROVED': 'Approve Expense',
-  'SUBMITTED->DRAFT': 'Return to Draft',
-  'APPROVED->PAID': 'Mark as Paid',
-  'APPROVED->SUBMITTED': 'Return for Review',
-  'PAID->CLOSED': 'Close Expense',
+  'DRAFT->IN_PROGRESS': 'Move to Processing',
+  'DRAFT->ON_HOLD': 'Put on Hold',
+  'IN_PROGRESS->DRAFT': 'Return to Draft',
+  'IN_PROGRESS->PAID': 'Mark as Paid',
+  'IN_PROGRESS->ON_HOLD': 'Put on Hold',
+  'ON_HOLD->DRAFT': 'Return to Draft',
+  'ON_HOLD->IN_PROGRESS': 'Resume Processing',
 } as const
 
 export function WorkflowStatusTransition({

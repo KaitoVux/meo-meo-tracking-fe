@@ -6,18 +6,12 @@ import {
   FileText,
   User,
 } from 'lucide-react'
-import { useState } from 'react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  ApprovalInterface,
-  WorkflowStatusTransition,
-  WorkflowVisualization,
-} from '@/components/workflow'
+import { WorkflowVisualization, WorkflowHistory } from '@/components/workflow'
 import { type Expense } from '@/lib/api'
-import { useAuthStore } from '@/store/auth'
+import { useAvailableTransitionsQuery } from '@/lib/queries/expenses'
 
 interface ExpenseDetailProps {
   expense: Expense
@@ -32,29 +26,18 @@ export function ExpenseDetail({
   onEdit,
   onStatusChange,
 }: ExpenseDetailProps) {
-  const { user } = useAuthStore()
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const { data: transitionsResponse } = useAvailableTransitionsQuery(expense.id)
+  const availableTransitions = transitionsResponse?.data || []
 
   const handleStatusChange = async (newStatus: string, notes?: string) => {
     if (!onStatusChange) return
 
     try {
-      setIsUpdatingStatus(true)
       await onStatusChange(newStatus, notes)
     } catch (error) {
       console.error('Failed to update status:', error)
       throw error
-    } finally {
-      setIsUpdatingStatus(false)
     }
-  }
-
-  const handleApprove = async (notes?: string) => {
-    await handleStatusChange('APPROVED', notes)
-  }
-
-  const handleReject = async (notes: string) => {
-    await handleStatusChange('DRAFT', notes)
   }
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -108,30 +91,18 @@ export function ExpenseDetail({
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Progress Visualization */}
-          <WorkflowVisualization expense={expense} />
+          <WorkflowVisualization
+            expense={expense}
+            onStatusChange={handleStatusChange}
+            availableTransitions={availableTransitions}
+          />
 
-          {/* Approval Interface - Show if expense neStatapproval */}
-          {expense.status === 'SUBMITTED' && user?.role === 'ACCOUNTANT' && (
-            <div className="mt-4 pt-4 border-t">
-              <ApprovalInterface
-                expense={expense}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                isLoading={isUpdatingStatus}
-              />
-            </div>
-          )}
+          {/* Approval interface removed - no longer needed with simplified workflow */}
 
-          {/* Available Actions */}
-          <div className="flex gap-4 pt-2 border-t items-stretch">
-            <WorkflowStatusTransition
-              expense={expense}
-              onStatusChange={handleStatusChange}
-              isLoading={isUpdatingStatus}
-              className="flex-1 flex flex-col"
-            />
+          {/* Three Cards Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
             {/* Amount & Payment Details */}
-            <Card className="flex-1 flex flex-col">
+            <Card className="flex flex-col">
               <CardHeader>
                 <CardTitle>Amount & Payment</CardTitle>
               </CardHeader>
@@ -202,7 +173,7 @@ export function ExpenseDetail({
               </CardContent>
             </Card>
             {/* Expense Details */}
-            <Card className="flex-1 flex flex-col">
+            <Card className="flex flex-col">
               <CardHeader>
                 <CardTitle>Expense Details</CardTitle>
               </CardHeader>
@@ -255,6 +226,9 @@ export function ExpenseDetail({
                 )}
               </CardContent>
             </Card>
+
+            {/* Workflow Timeline Card */}
+            <WorkflowHistory expense={expense} />
           </div>
         </CardContent>
       </Card>
@@ -328,38 +302,6 @@ export function ExpenseDetail({
               </CardContent>
             </Card>
           )}
-
-          {/* Compact Workflow Timeline */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center justify-between">
-                Workflow Timeline
-                <Badge className="text-xs">2 events</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="font-medium">Draft → Submitted</span>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    Aug 30, 07:46 PM
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                    <span className="text-gray-600">Expense created</span>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    Aug 29, 09:46 AM
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

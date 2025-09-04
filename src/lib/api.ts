@@ -134,7 +134,7 @@ export interface Expense {
   description: string
   projectCostCenter?: string
   paymentMethod: 'BANK_TRANSFER' | 'PETTY_CASH' | 'CREDIT_CARD'
-  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'PAID' | 'CLOSED'
+  status: 'DRAFT' | 'IN_PROGRESS' | 'PAID' | 'ON_HOLD'
 
   // Foreign key IDs for easier frontend consumption
   submitterId: string
@@ -575,6 +575,13 @@ class ApiClient {
     })
   }
 
+  async getAvailableTransitions(id: string): Promise<ApiResponse<string[]>> {
+    return this.request<string[]>({
+      url: `/expenses/${id}/available-transitions`,
+      method: 'GET',
+    })
+  }
+
   // Category endpoints
   async getCategories(
     params?: CategoryQueryParams
@@ -820,7 +827,7 @@ class ApiClient {
   // Dashboard and reporting endpoints
   async getDashboardStats(): Promise<ApiResponse<DashboardStats>> {
     return this.request<DashboardStats>({
-      url: '/dashboard/stats',
+      url: '/reports/dashboard',
       method: 'GET',
     })
   }

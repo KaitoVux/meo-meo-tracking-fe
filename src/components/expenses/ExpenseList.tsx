@@ -39,18 +39,16 @@ interface ExpenseListProps {
 
 const statusColors = {
   DRAFT: 'secondary',
-  SUBMITTED: 'default',
-  APPROVED: 'default',
+  IN_PROGRESS: 'default',
   PAID: 'default',
-  CLOSED: 'secondary',
+  ON_HOLD: 'destructive',
 } as const
 
 const statusLabels = {
   DRAFT: 'Draft',
-  SUBMITTED: 'Submitted',
-  APPROVED: 'Approved',
+  IN_PROGRESS: 'In Progress',
   PAID: 'Paid',
-  CLOSED: 'Closed',
+  ON_HOLD: 'On Hold',
 }
 
 export function ExpenseList({
@@ -153,10 +151,9 @@ export function ExpenseList({
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                 <SelectItem value="PAID">Paid</SelectItem>
-                <SelectItem value="CLOSED">Closed</SelectItem>
+                <SelectItem value="ON_HOLD">On Hold</SelectItem>
               </SelectContent>
             </Select>
             <Select onValueChange={handleCategoryFilter}>
@@ -279,11 +276,11 @@ export function ExpenseList({
                             createViewAction(() => onViewExpense(expense)),
                             createEditAction(
                               () => onEditExpense(expense),
-                              expense.status === 'APPROVED'
+                              expense.status === 'IN_PROGRESS'
                             ),
                             createDeleteAction(
                               () => onDeleteExpense(expense),
-                              expense.status === 'APPROVED'
+                              expense.status === 'IN_PROGRESS'
                             ),
                           ]}
                         />

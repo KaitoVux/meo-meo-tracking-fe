@@ -5,101 +5,40 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { type Expense } from '@/lib/api'
+import { useExpenseStatusHistoryQuery } from '@/lib/queries/expenses'
 
 interface WorkflowHistoryProps {
   expense: Expense
 }
 
-interface StatusHistoryItem {
-  id: string
-  fromStatus: string
-  toStatus: string
-  notes?: string
-  createdAt: string
-  changedBy: {
-    id: string
-    firstName: string
-    lastName: string
-    email: string
-  }
-}
-
 const statusLabels = {
   DRAFT: 'Draft',
-  SUBMITTED: 'Submitted',
-  APPROVED: 'Approved',
+  IN_PROGRESS: 'In Progress',
   PAID: 'Paid',
-  CLOSED: 'Closed',
+  ON_HOLD: 'On Hold',
 }
 
 const statusColors = {
   DRAFT: 'bg-gray-100 text-gray-800',
-  SUBMITTED: 'bg-blue-100 text-blue-800',
+  IN_PROGRESS: 'bg-blue-100 text-blue-800',
   APPROVED: 'bg-green-100 text-green-800',
   PAID: 'bg-purple-100 text-purple-800',
   CLOSED: 'bg-gray-100 text-gray-800',
 }
 
 export function WorkflowHistory({ expense }: WorkflowHistoryProps) {
-  const [history, setHistory] = useState<StatusHistoryItem[]>([])
-  const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
 
-  const loadHistory = useCallback(async () => {
-    try {
-      setLoading(true)
-      // Note: This endpoint would need to be implemented in the backend
-      // For now, we'll create mock data based on the expense
-      const mockHistory: StatusHistoryItem[] = [
-        {
-          id: '1',
-          fromStatus: '',
-          toStatus: 'DRAFT',
-          notes: 'Expense created',
-          createdAt: expense.createdAt,
-          changedBy: expense.submitter || {
-            id: 'unknown',
-            firstName: 'Unknown',
-            lastName: 'User',
-            email: 'unknown@example.com',
-          },
-        },
-      ]
-
-      // Add current status if different from DRAFT
-      if (expense.status !== 'DRAFT') {
-        mockHistory.push({
-          id: '2',
-          fromStatus: 'DRAFT',
-          toStatus: expense.status,
-          notes: `Status changed to ${statusLabels[expense.status]}`,
-          createdAt: expense.updatedAt,
-          changedBy: expense.submitter || {
-            id: 'unknown',
-            firstName: 'Unknown',
-            lastName: 'User',
-            email: 'unknown@example.com',
-          },
-        })
-      }
-
-      setHistory(mockHistory)
-    } catch (error) {
-      console.error('Failed to load workflow history:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [expense])
-
-  useEffect(() => {
-    loadHistory()
-  }, [expense.id, loadHistory])
+  // Use the real API query instead of mock data
+  const { data: historyResponse, isLoading: loading } =
+    useExpenseStatusHistoryQuery(expense.id)
+  const history = historyResponse?.data || []
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {

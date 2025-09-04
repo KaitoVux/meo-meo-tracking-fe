@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table'
 import { WorkflowVisualization, ApprovalInterface } from '@/components/workflow'
 import { apiClient, type Expense, type ExpenseQueryParams } from '@/lib/api'
+import { useAvailableTransitionsQuery } from '@/lib/queries/expenses'
 import { useAuthStore } from '@/store/auth'
 
 interface WorkflowStats {
@@ -36,6 +37,12 @@ export function WorkflowPage() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Get available transitions for selected expense
+  const { data: transitionsResponse } = useAvailableTransitionsQuery(
+    selectedExpense?.id || ''
+  )
+  const availableTransitions = transitionsResponse?.data || []
   const [stats, setStats] = useState<WorkflowStats>({
     pending: 0,
     approved: 0,
@@ -45,7 +52,7 @@ export function WorkflowPage() {
   const [filters, setFilters] = useState<ExpenseQueryParams>({
     page: 1,
     limit: 25,
-    status: user?.role === 'ACCOUNTANT' ? 'SUBMITTED' : undefined,
+    status: undefined, // No role-based filtering needed
   })
 
   const loadExpenses = useCallback(async () => {
@@ -58,8 +65,8 @@ export function WorkflowPage() {
       const newStats = (response.data || []).reduce(
         (acc, expense) => {
           acc.total++
-          if (expense.status === 'SUBMITTED') acc.pending++
-          if (expense.status === 'APPROVED') acc.approved++
+          if (expense.status === 'IN_PROGRESS') acc.pending++
+          if (expense.status === 'ON_HOLD') acc.approved++
           if (expense.status === 'PAID') acc.paid++
           return acc
         },
@@ -100,9 +107,7 @@ export function WorkflowPage() {
     }
   }
 
-  const handleApprove = async (expense: Expense, notes?: string) => {
-    await handleStatusChange(expense.id, 'APPROVED', notes)
-  }
+  // Approval function removed - no longer needed
 
   const handleReject = async (expense: Expense, notes: string) => {
     await handleStatusChange(expense.id, 'DRAFT', notes)
@@ -126,18 +131,16 @@ export function WorkflowPage() {
 
   const statusColors = {
     DRAFT: 'secondary',
-    SUBMITTED: 'default',
-    APPROVED: 'default',
+    IN_PROGRESS: 'default',
     PAID: 'default',
-    CLOSED: 'secondary',
+    ON_HOLD: 'destructive',
   } as const
 
   const statusLabels = {
     DRAFT: 'Draft',
-    SUBMITTED: 'Submitted',
-    APPROVED: 'Approved',
+    IN_PROGRESS: 'In Progress',
     PAID: 'Paid',
-    CLOSED: 'Closed',
+    ON_HOLD: 'On Hold',
   }
 
   return (
@@ -145,11 +148,7 @@ export function WorkflowPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Workflow Management</h1>
-          <p className="text-gray-600">
-            {user?.role === 'ACCOUNTANT'
-              ? 'Review and approve expense submissions'
-              : 'Track your expense workflow status'}
-          </p>
+          <p className="text-gray-600">Manage your expense workflow status</p>
         </div>
       </div>
 
@@ -160,9 +159,7 @@ export function WorkflowPage() {
             <div className="flex items-center space-x-2">
               <Clock className="h-5 w-5 text-orange-500" />
               <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Pending Review
-                </p>
+                <p className="text-sm font-medium text-gray-600">In Progress</p>
                 <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
             </div>
@@ -174,7 +171,7 @@ export function WorkflowPage() {
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
               <div>
-                <p className="text-sm font-medium text-gray-600">Approved</p>
+                <p className="text-sm font-medium text-gray-600">On Hold</p>
                 <p className="text-2xl font-bold">{stats.approved}</p>
               </div>
             </div>
@@ -241,10 +238,9 @@ export function WorkflowPage() {
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                 <SelectItem value="PAID">Paid</SelectItem>
-                <SelectItem value="CLOSED">Closed</SelectItem>
+                <SelectItem value="ON_HOLD">On Hold</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -287,9 +283,15 @@ export function WorkflowPage() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <WorkflowVisualization expense={selectedExpense} />
+                    <WorkflowVisualization
+                      expense={selectedExpense}
+                      onStatusChange={(status, notes) =>
+                        handleUpdateStatus(selectedExpense, status, notes)
+                      }
+                      availableTransitions={availableTransitions}
+                    />
 
-                    {selectedExpense.status === 'SUBMITTED' &&
+                    {selectedExpense.status !== 'PAID' &&
                       user?.role === 'ACCOUNTANT' && (
                         <ApprovalInterface
                           expense={selectedExpense}

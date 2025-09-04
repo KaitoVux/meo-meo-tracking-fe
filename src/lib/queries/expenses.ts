@@ -51,6 +51,17 @@ export function useExpenseStatusHistoryQuery(expenseId: string) {
 }
 
 /**
+ * Query hook for getting available status transitions for an expense
+ */
+export function useAvailableTransitionsQuery(expenseId: string) {
+  return useQuery({
+    queryKey: queryKeys.expenses.availableTransitions(expenseId),
+    queryFn: () => apiClient.getAvailableTransitions(expenseId),
+    enabled: !!expenseId,
+  })
+}
+
+/**
  * Infinite query hook for expenses (useful for infinite scrolling)
  */
 export function useInfiniteExpensesQuery(
