@@ -3,6 +3,7 @@ import {
   Calendar,
   CreditCard,
   Download,
+  ExternalLink,
   FileText,
   User,
 } from 'lucide-react'
@@ -222,6 +223,29 @@ export function ExpenseDetail({
                       Project/Cost Center
                     </span>
                     <p className="mt-1">{expense.projectCostCenter}</p>
+                  </div>
+                )}
+
+                {expense.invoiceLink && (
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">
+                      Invoice Link
+                    </span>
+                    <div className="mt-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-auto p-2 text-left justify-start"
+                        onClick={() =>
+                          window.open(expense.invoiceLink, '_blank')
+                        }
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2 text-blue-500" />
+                        <span className="text-blue-600 hover:text-blue-800 truncate">
+                          {expense.invoiceLink}
+                        </span>
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>

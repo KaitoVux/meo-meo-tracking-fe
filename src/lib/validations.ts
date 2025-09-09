@@ -110,6 +110,10 @@ export const expenseSchema = z
     projectCostCenter: z.string().optional(),
     paymentMethod: z.enum(['BANK_TRANSFER', 'PETTY_CASH', 'CREDIT_CARD']),
     invoiceFileId: z.string().optional(),
+    invoiceLink: z
+      .url('Invoice link must be a valid URL')
+      .optional()
+      .or(z.literal('')),
   })
   .refine(
     data => {

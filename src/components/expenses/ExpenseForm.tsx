@@ -103,6 +103,7 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
       description: expense?.description || '',
       projectCostCenter: expense?.projectCostCenter || '',
       paymentMethod: expense?.paymentMethod || 'BANK_TRANSFER',
+      invoiceLink: expense?.invoiceLink || '',
     },
   })
 
@@ -646,6 +647,23 @@ export function ExpenseForm({ expense, onSubmit, onCancel }: ExpenseFormProps) {
                     <FormControl>
                       <Input
                         placeholder="Enter project or cost center"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="invoiceLink"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invoice Link (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://drive.google.com/file/d/... or external link"
                         {...field}
                       />
                     </FormControl>
