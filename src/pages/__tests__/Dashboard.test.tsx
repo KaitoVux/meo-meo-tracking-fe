@@ -72,12 +72,10 @@ const mockCategoriesData = {
 }
 
 const mockVendorsData = {
-  data: {
-    vendors: [
-      { id: '1', name: 'Staples Inc.', status: 'ACTIVE' },
-      { id: '2', name: 'Uber', status: 'ACTIVE' },
-    ],
-  },
+  data: [
+    { id: '1', name: 'Staples Inc.', status: 'ACTIVE' },
+    { id: '2', name: 'Uber', status: 'ACTIVE' },
+  ],
 }
 
 describe('Dashboard', () => {

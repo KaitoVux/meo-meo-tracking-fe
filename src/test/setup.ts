@@ -11,6 +11,13 @@ vi.mock('import.meta', () => ({
 // Mock window.fetch for tests that might use it
 global.fetch = vi.fn()
 
+// Mock cn function from utils
+vi.mock('@/lib/utils', () => ({
+  cn: (...args: any[]) => args.filter(Boolean).join(' '),
+  formatCurrency: (amount: number, currency = 'VND') =>
+    `${currency} ${amount.toLocaleString()}`,
+}))
+
 // Mock FormData for file upload tests
 global.FormData = class FormData {
   private data: Map<string, any> = new Map()

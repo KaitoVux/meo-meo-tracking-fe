@@ -845,6 +845,51 @@ class ApiClient {
     })
   }
 
+  // Generate reports
+  async generateReport(
+    params: ReportQueryParams
+  ): Promise<ApiResponse<ReportData>> {
+    return this.request<ReportData>({
+      url: '/reports/generate',
+      method: 'POST',
+      data: params,
+    })
+  }
+
+  async generatePaginatedReport(
+    params: ReportQueryParams,
+    page: number = 1,
+    limit: number = 100
+  ): Promise<ApiResponse<ReportData>> {
+    return this.request<ReportData>({
+      url: `/reports/generate/paginated?page=${page}&limit=${limit}`,
+      method: 'POST',
+      data: params,
+    })
+  }
+
+  // Payment due reports
+  async getPaymentsDueWeekly(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>({
+      url: '/reports/payments-due/weekly',
+      method: 'GET',
+    })
+  }
+
+  async getPaymentsDueMonthly(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>({
+      url: '/reports/payments-due/monthly',
+      method: 'GET',
+    })
+  }
+
+  async getOverduePayments(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>({
+      url: '/reports/payments-due/overdue',
+      method: 'GET',
+    })
+  }
+
   async exportReport(params: ExportReportParams): Promise<Blob> {
     const response = await this.axiosInstance.request({
       url: '/reports/export',
@@ -880,4 +925,21 @@ class ApiClient {
   }
 }
 
+// Type exports for external use
+export const ExpenseStatus = {
+  DRAFT: 'DRAFT' as const,
+  SUBMITTED: 'SUBMITTED' as const,
+  APPROVED: 'APPROVED' as const,
+  IN_PROGRESS: 'IN_PROGRESS' as const,
+  PAID: 'PAID' as const,
+  CLOSED: 'CLOSED' as const,
+  ON_HOLD: 'ON_HOLD' as const,
+} as const
+
+export type ExpenseStatus = (typeof ExpenseStatus)[keyof typeof ExpenseStatus]
+export type Currency = 'VND' | 'USD'
+export type PaymentMethod = 'BANK_TRANSFER' | 'PETTY_CASH' | 'CREDIT_CARD'
+
+// Create API client instance
 export const apiClient = new ApiClient(API_BASE_URL)
+export const api = apiClient

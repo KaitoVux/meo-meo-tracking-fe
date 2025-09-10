@@ -17,11 +17,11 @@ import { LoginPage } from './pages/LoginPage'
 import { NewExpensePage } from './pages/NewExpensePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
+import { ReportsPage } from './pages/ReportsPage'
 import { VendorsPage } from './pages/VendorsPage'
 import { WorkflowPage } from './pages/WorkflowPage'
 
 // Placeholder components for other routes
-const Reports = () => <div>Reports Page - Coming Soon</div>
 const Import = () => <div>Import Page - Coming Soon</div>
 const Settings = () => <div>Settings Page - Coming Soon</div>
 
@@ -52,7 +52,7 @@ function App() {
             <Route path="vendors" element={<VendorsPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="workflow" element={<WorkflowPage />} />
-            <Route path="reports" element={<Reports />} />
+            <Route path="reports" element={<ReportsPage />} />
             <Route path="import" element={<Import />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="settings" element={<Settings />} />
