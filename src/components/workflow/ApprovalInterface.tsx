@@ -21,7 +21,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type Expense } from '@/lib/api'
-import { useAuthStore } from '@/store/auth'
 
 interface ApprovalInterfaceProps {
   expense: Expense
@@ -36,15 +35,10 @@ export function ApprovalInterface({
   onReject,
   isLoading = false,
 }: ApprovalInterfaceProps) {
-  const { user } = useAuthStore()
   const [approvalNotes, setApprovalNotes] = useState('')
   const [rejectionNotes, setRejectionNotes] = useState('')
   const [showApprovalDialog, setShowApprovalDialog] = useState(false)
   const [showRejectionDialog, setShowRejectionDialog] = useState(false)
-
-  // Check if user has approval permissions (e.g., is an accountant)
-  const canApprove =
-    user?.role === 'ACCOUNTANT' && expense.status === 'SUBMITTED'
 
   const handleApprove = async () => {
     try {
@@ -76,10 +70,6 @@ export function ApprovalInterface({
       currency: currency,
       minimumFractionDigits: 2,
     }).format(amount)
-  }
-
-  if (!canApprove) {
-    return null // Don't show approval interface if user can't approve
   }
 
   return (

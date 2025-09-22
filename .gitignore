@@ -51,3 +51,5 @@ temp/
 # Package manager files
 yarn.lock
 pnpm-lock.yaml
+
+tsconfig.app.tsbuildinfo

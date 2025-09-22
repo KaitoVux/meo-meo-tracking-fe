@@ -107,7 +107,9 @@ export function WorkflowPage() {
     }
   }
 
-  // Approval function removed - no longer needed
+  const handleApprove = async (expense: Expense, notes?: string) => {
+    await handleStatusChange(expense.id, 'PAID', notes || '')
+  }
 
   const handleReject = async (expense: Expense, notes: string) => {
     await handleStatusChange(expense.id, 'DRAFT', notes)
@@ -286,7 +288,7 @@ export function WorkflowPage() {
                     <WorkflowVisualization
                       expense={selectedExpense}
                       onStatusChange={(status, notes) =>
-                        handleUpdateStatus(selectedExpense, status, notes)
+                        handleStatusChange(selectedExpense.id, status, notes)
                       }
                       availableTransitions={availableTransitions}
                     />
