@@ -2,6 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom overrides for React Day Picker to match shadcn design system */
+.rdp-root {
+  --rdp-accent-color: hsl(var(--primary));
+  --rdp-accent-background-color: hsl(var(--primary) / 0.1);
+  --rdp-today-color: hsl(var(--primary));
+  --rdp-disabled-opacity: 0.5;
+  --rdp-outside-opacity: 0.5;
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 36px;
+  --rdp-day_button-width: 36px;
+  --rdp-day_button-border-radius: calc(var(--radius) - 2px);
+  --rdp-day_button-border: 1px solid transparent;
+  --rdp-selected-border: 1px solid hsl(var(--primary));
+  --rdp-range_middle-background-color: hsl(var(--accent));
+}
+
+.rdp-root .rdp-day_button {
+  @apply text-sm font-normal;
+  color: hsl(var(--foreground));
+}
+
+.rdp-root .rdp-day_button:hover {
+  @apply bg-accent text-accent-foreground;
+}
+
+.rdp-root .rdp-day_button[data-selected] {
+  @apply bg-primary text-primary-foreground;
+}
+
+.rdp-root .rdp-day_button[data-today] {
+  @apply bg-accent text-accent-foreground font-medium;
+}
+
+.rdp-root .rdp-day_button[data-outside] {
+  @apply text-muted-foreground opacity-50;
+}
+
+.rdp-root .rdp-day_button[data-disabled] {
+  @apply text-muted-foreground opacity-50 cursor-not-allowed;
+}
+
+.rdp-root .rdp-month_caption {
+  @apply text-sm font-medium mb-4;
+  color: hsl(var(--foreground));
+}
+
+.rdp-root .rdp-weekday {
+  @apply text-muted-foreground text-xs font-normal;
+}
+
+.rdp-root .rdp-nav_button {
+  @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  width: 28px;
+  height: 28px;
+}
+
+.rdp-root .rdp-nav_button[disabled] {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* Dropdown styling to match shadcn select components */
+.rdp-root .rdp-dropdown {
+  @apply flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-4 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  min-width: 120px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.rdp-root .rdp-dropdown:hover {
+  @apply bg-accent;
+}
+
+.rdp-root .rdp-dropdown:focus {
+  @apply ring-2 ring-ring ring-offset-2;
+}
+
+.rdp-root .rdp-dropdown_root {
+  @apply relative inline-block;
+}
+
+/* Fix month caption spacing and hide label when using dropdowns */
+.rdp-root .rdp-month_caption {
+  @apply mb-6;
+  padding: 8px 0;
+}
+
+.rdp-root .rdp-caption_label {
+  @apply hidden;
+}
+
+/* Center the dropdowns in the caption area with proper spacing */
+.rdp-root .rdp-caption_dropdowns {
+  @apply flex gap-6 items-center justify-center w-full;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

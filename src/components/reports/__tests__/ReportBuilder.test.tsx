@@ -96,8 +96,10 @@ describe('ReportBuilder', () => {
     expect(screen.getByLabelText('DRAFT')).toBeInTheDocument()
     expect(screen.getByLabelText('SUBMITTED')).toBeInTheDocument()
     expect(screen.getByLabelText('APPROVED')).toBeInTheDocument()
+    expect(screen.getByLabelText('IN_PROGRESS')).toBeInTheDocument()
     expect(screen.getByLabelText('PAID')).toBeInTheDocument()
     expect(screen.getByLabelText('CLOSED')).toBeInTheDocument()
+    expect(screen.getByLabelText('ON_HOLD')).toBeInTheDocument()
   })
 
   it('allows selecting filters', async () => {
@@ -176,5 +178,113 @@ describe('ReportBuilder', () => {
         expect(screen.getByText('Category')).toBeInTheDocument()
       })
     }
+  })
+
+  it('renders Select All checkboxes for categories, vendors, and statuses', () => {
+    renderWithProviders(<ReportBuilder />)
+
+    expect(
+      screen.getByLabelText('Select All', {
+        selector: '#select-all-categories',
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Select All', { selector: '#select-all-vendors' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Select All', { selector: '#select-all-statuses' })
+    ).toBeInTheDocument()
+  })
+
+  it('selects all categories when Select All categories is clicked', async () => {
+    renderWithProviders(<ReportBuilder />)
+
+    const selectAllCategories = screen.getByLabelText('Select All', {
+      selector: '#select-all-categories',
+    })
+    fireEvent.click(selectAllCategories)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('HCMC')).toBeChecked()
+      expect(screen.getByLabelText('DN')).toBeChecked()
+      expect(screen.getByLabelText('Travel')).toBeChecked()
+      expect(screen.getByText('3 Categories')).toBeInTheDocument()
+    })
+  })
+
+  it('selects all vendors when Select All vendors is clicked', async () => {
+    renderWithProviders(<ReportBuilder />)
+
+    const selectAllVendors = screen.getByLabelText('Select All', {
+      selector: '#select-all-vendors',
+    })
+    fireEvent.click(selectAllVendors)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Vendor A')).toBeChecked()
+      expect(screen.getByLabelText('Vendor B')).toBeChecked()
+      expect(screen.getByText('2 Vendors')).toBeInTheDocument()
+    })
+  })
+
+  it('selects all statuses when Select All statuses is clicked', async () => {
+    renderWithProviders(<ReportBuilder />)
+
+    const selectAllStatuses = screen.getByLabelText('Select All', {
+      selector: '#select-all-statuses',
+    })
+    fireEvent.click(selectAllStatuses)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('DRAFT')).toBeChecked()
+      expect(screen.getByLabelText('SUBMITTED')).toBeChecked()
+      expect(screen.getByLabelText('APPROVED')).toBeChecked()
+      expect(screen.getByLabelText('IN_PROGRESS')).toBeChecked()
+      expect(screen.getByLabelText('PAID')).toBeChecked()
+      expect(screen.getByLabelText('CLOSED')).toBeChecked()
+      expect(screen.getByLabelText('ON_HOLD')).toBeChecked()
+      expect(screen.getByText('7 Statuses')).toBeInTheDocument()
+    })
+  })
+
+  it('deselects all categories when Select All categories is clicked twice', async () => {
+    renderWithProviders(<ReportBuilder />)
+
+    const selectAllCategories = screen.getByLabelText('Select All', {
+      selector: '#select-all-categories',
+    })
+
+    // First click - select all
+    fireEvent.click(selectAllCategories)
+
+    await waitFor(() => {
+      expect(screen.getByText('3 Categories')).toBeInTheDocument()
+    })
+
+    // Second click - deselect all
+    fireEvent.click(selectAllCategories)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('HCMC')).not.toBeChecked()
+      expect(screen.getByLabelText('DN')).not.toBeChecked()
+      expect(screen.getByLabelText('Travel')).not.toBeChecked()
+      expect(screen.queryByText('3 Categories')).not.toBeInTheDocument()
+    })
+  })
+
+  it('shows Select All as checked when all items are individually selected', async () => {
+    renderWithProviders(<ReportBuilder />)
+
+    // Select all categories individually
+    fireEvent.click(screen.getByLabelText('HCMC'))
+    fireEvent.click(screen.getByLabelText('DN'))
+    fireEvent.click(screen.getByLabelText('Travel'))
+
+    await waitFor(() => {
+      const selectAllCategories = screen.getByLabelText('Select All', {
+        selector: '#select-all-categories',
+      })
+      expect(selectAllCategories).toBeChecked()
+    })
   })
 })

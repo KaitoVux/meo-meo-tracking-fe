@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { Download, Eye, Filter } from 'lucide-react'
 import React, { useState } from 'react'
 
@@ -44,7 +44,10 @@ interface ReportFilters {
 }
 
 export function ReportBuilder() {
+  const currentDate = new Date()
   const [filters, setFilters] = useState<ReportFilters>({
+    dateFrom: startOfMonth(currentDate),
+    dateTo: endOfMonth(currentDate),
     categories: [],
     vendors: [],
     statuses: [],
@@ -80,6 +83,35 @@ export function ReportBuilder() {
     }))
   }
 
+  const handleSelectAllCategories = (checked: boolean) => {
+    const allCategoryIds = categories?.data?.map(category => category.id) || []
+    setFilters(prev => ({
+      ...prev,
+      categories: checked ? allCategoryIds : [],
+    }))
+  }
+
+  const handleSelectAllVendors = (checked: boolean) => {
+    const allVendorIds = vendors?.data?.map(vendor => vendor.id) || []
+    setFilters(prev => ({
+      ...prev,
+      vendors: checked ? allVendorIds : [],
+    }))
+  }
+
+  const handleSelectAllStatuses = (checked: boolean) => {
+    const allowedStatuses = [
+      ExpenseStatus.DRAFT,
+      ExpenseStatus.IN_PROGRESS,
+      ExpenseStatus.PAID,
+      ExpenseStatus.ON_HOLD,
+    ]
+    setFilters(prev => ({
+      ...prev,
+      statuses: checked ? allowedStatuses : [],
+    }))
+  }
+
   const handleGenerateReport = async () => {
     const reportData = await generateReport(filters)
     if (reportData) {
@@ -92,7 +124,10 @@ export function ReportBuilder() {
   }
 
   const clearFilters = () => {
+    const currentDate = new Date()
     setFilters({
+      dateFrom: startOfMonth(currentDate),
+      dateTo: endOfMonth(currentDate),
       categories: [],
       vendors: [],
       statuses: [],
@@ -144,7 +179,28 @@ export function ReportBuilder() {
 
           {/* Categories */}
           <div className="space-y-3">
-            <Label>Categories</Label>
+            <div className="flex items-center justify-between">
+              <Label>Categories</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="select-all-categories"
+                  checked={
+                    (categories?.data?.length ?? 0) > 0 &&
+                    filters.categories.length ===
+                      (categories?.data?.length ?? 0)
+                  }
+                  onCheckedChange={checked =>
+                    handleSelectAllCategories(checked as boolean)
+                  }
+                />
+                <Label
+                  htmlFor="select-all-categories"
+                  className="text-sm text-muted-foreground"
+                >
+                  Select All
+                </Label>
+              </div>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {categories?.data?.map(category => (
                 <div key={category.id} className="flex items-center space-x-2">
@@ -174,7 +230,27 @@ export function ReportBuilder() {
 
           {/* Vendors */}
           <div className="space-y-3">
-            <Label>Vendors</Label>
+            <div className="flex items-center justify-between">
+              <Label>Vendors</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="select-all-vendors"
+                  checked={
+                    (vendors?.data?.length ?? 0) > 0 &&
+                    filters.vendors.length === (vendors?.data?.length ?? 0)
+                  }
+                  onCheckedChange={checked =>
+                    handleSelectAllVendors(checked as boolean)
+                  }
+                />
+                <Label
+                  htmlFor="select-all-vendors"
+                  className="text-sm text-muted-foreground"
+                >
+                  Select All
+                </Label>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-32 overflow-y-auto">
               {vendors?.data?.map(vendor => (
                 <div key={vendor.id} className="flex items-center space-x-2">
@@ -201,9 +277,39 @@ export function ReportBuilder() {
 
           {/* Status Filters */}
           <div className="space-y-3">
-            <Label>Status</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {Object.values(ExpenseStatus).map(status => (
+            <div className="flex items-center justify-between">
+              <Label>Status</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="select-all-statuses"
+                  checked={
+                    filters.statuses.length === 4 &&
+                    [
+                      ExpenseStatus.DRAFT,
+                      ExpenseStatus.IN_PROGRESS,
+                      ExpenseStatus.PAID,
+                      ExpenseStatus.ON_HOLD,
+                    ].every(status => filters.statuses.includes(status))
+                  }
+                  onCheckedChange={checked =>
+                    handleSelectAllStatuses(checked as boolean)
+                  }
+                />
+                <Label
+                  htmlFor="select-all-statuses"
+                  className="text-sm text-muted-foreground"
+                >
+                  Select All
+                </Label>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                ExpenseStatus.DRAFT,
+                ExpenseStatus.IN_PROGRESS,
+                ExpenseStatus.PAID,
+                ExpenseStatus.ON_HOLD,
+              ].map(status => (
                 <div key={status} className="flex items-center space-x-2">
                   <Checkbox
                     id={`status-${status}`}
@@ -217,7 +323,7 @@ export function ReportBuilder() {
                     }
                   />
                   <Label htmlFor={`status-${status}`} className="text-sm">
-                    {status}
+                    {status.replace('_', ' ')}
                   </Label>
                 </div>
               ))}
