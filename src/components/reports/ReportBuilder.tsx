@@ -113,14 +113,24 @@ export function ReportBuilder() {
   }
 
   const handleGenerateReport = async () => {
-    const reportData = await generateReport(filters)
+    const reportData = await generateReport({
+      ...filters,
+      totalCategories: categories?.data?.length,
+      totalVendors: vendors?.data?.length,
+    })
     if (reportData) {
       setShowPreview(true)
     }
   }
 
   const handleExport = async (format: 'excel' | 'csv' | 'pdf') => {
-    await exportReport({ ...filters, format, reportType: 'expense_report' })
+    await exportReport({
+      ...filters,
+      format,
+      reportType: 'expense_report',
+      totalCategories: categories?.data?.length,
+      totalVendors: vendors?.data?.length,
+    })
   }
 
   const clearFilters = () => {

@@ -31,11 +31,11 @@ export function useReportQuery(filters: ReportFilters) {
     queryKey: ['reports', 'generate', filters],
     queryFn: async () => {
       const response = await api.generateReport({
-        startDate: filters.dateFrom?.toISOString(),
-        endDate: filters.dateTo?.toISOString(),
-        category: filters.categories?.[0], // For now, use first category
-        vendor: filters.vendors?.[0], // For now, use first vendor
-        status: filters.statuses?.[0], // For now, use first status
+        dateFrom: filters.dateFrom?.toISOString(),
+        dateTo: filters.dateTo?.toISOString(),
+        categories: filters.categories,
+        vendors: filters.vendors,
+        statuses: filters.statuses,
         groupBy: filters.groupBy as
           | 'category'
           | 'vendor'
@@ -60,11 +60,11 @@ export function usePaginatedReportQuery(
     queryFn: async () => {
       const response = await api.generatePaginatedReport(
         {
-          startDate: filters.dateFrom?.toISOString(),
-          endDate: filters.dateTo?.toISOString(),
-          category: filters.categories?.[0],
-          vendor: filters.vendors?.[0],
-          status: filters.statuses?.[0],
+          dateFrom: filters.dateFrom?.toISOString(),
+          dateTo: filters.dateTo?.toISOString(),
+          categories: filters.categories,
+          vendors: filters.vendors,
+          statuses: filters.statuses,
           groupBy: filters.groupBy as
             | 'category'
             | 'vendor'
@@ -115,13 +115,33 @@ export function usePaymentStatisticsQuery(dateFrom: Date, dateTo: Date) {
 // Report generation and export hook
 export function useReportGeneration() {
   const generateMutation = useMutation({
-    mutationFn: async (filters: ReportFilters) => {
+    mutationFn: async (
+      filters: ReportFilters & {
+        totalCategories?: number
+        totalVendors?: number
+      }
+    ) => {
+      // Check if "select all" is active for each filter type
+      const isAllCategories =
+        filters.categories &&
+        filters.totalCategories &&
+        filters.categories.length === filters.totalCategories
+      const isAllVendors =
+        filters.vendors &&
+        filters.totalVendors &&
+        filters.vendors.length === filters.totalVendors
+      const isAllStatuses = filters.statuses && filters.statuses.length >= 4 // All 4 statuses
+
       const response = await api.generateReport({
-        startDate: filters.dateFrom?.toISOString(),
-        endDate: filters.dateTo?.toISOString(),
-        category: filters.categories?.[0],
-        vendor: filters.vendors?.[0],
-        status: filters.statuses?.[0],
+        dateFrom: filters.dateFrom?.toISOString(),
+        dateTo: filters.dateTo?.toISOString(),
+        // Use optimized payload structure
+        selectAllCategories: !!isAllCategories,
+        selectAllVendors: !!isAllVendors,
+        selectAllStatuses: !!isAllStatuses,
+        categories: isAllCategories ? [] : filters.categories,
+        vendors: isAllVendors ? [] : filters.vendors,
+        statuses: isAllStatuses ? [] : filters.statuses,
         groupBy: filters.groupBy as
           | 'category'
           | 'vendor'
@@ -148,13 +168,35 @@ export function useReportGeneration() {
   })
 
   const exportMutation = useMutation({
-    mutationFn: async (query: ExportQuery) => {
+    mutationFn: async (
+      query: ExportQuery & {
+        totalCategories?: number
+        totalVendors?: number
+      }
+    ) => {
+      // Apply same optimization logic for export
+      const isAllCategories =
+        query.categories &&
+        query.totalCategories &&
+        query.categories.length === query.totalCategories
+      const isAllVendors =
+        query.vendors &&
+        query.totalVendors &&
+        query.vendors.length === query.totalVendors
+      const isAllStatuses = query.statuses && query.statuses.length >= 4
+
       const blob = await api.exportReport({
         format: query.format,
         reportType: 'detailed' as const,
         filters: {
-          startDate: query.dateFrom?.toISOString(),
-          endDate: query.dateTo?.toISOString(),
+          dateFrom: query.dateFrom?.toISOString(),
+          dateTo: query.dateTo?.toISOString(),
+          selectAllCategories: !!isAllCategories,
+          selectAllVendors: !!isAllVendors,
+          selectAllStatuses: !!isAllStatuses,
+          categories: isAllCategories ? [] : query.categories,
+          vendors: isAllVendors ? [] : query.vendors,
+          statuses: isAllStatuses ? [] : query.statuses,
         },
       })
 

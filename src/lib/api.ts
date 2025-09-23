@@ -275,11 +275,14 @@ export interface DashboardStats {
 }
 
 export interface ReportQueryParams {
-  startDate?: string
-  endDate?: string
-  category?: string
-  vendor?: string
-  status?: string
+  dateFrom?: string
+  dateTo?: string
+  categories?: string[]
+  vendors?: string[]
+  statuses?: string[]
+  selectAllCategories?: boolean
+  selectAllVendors?: boolean
+  selectAllStatuses?: boolean
   submitterId?: string
   groupBy?: 'category' | 'vendor' | 'month' | 'status'
   includeDetails?: boolean
