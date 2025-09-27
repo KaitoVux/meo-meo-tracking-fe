@@ -4,7 +4,6 @@ import {
   FileText,
   Upload,
   Settings,
-  PlusCircle,
   GitBranch,
   Building2,
   FolderTree,
@@ -43,11 +42,7 @@ const navigation = [
     href: '/workflow',
     icon: GitBranch,
   },
-  {
-    name: 'Add Expense',
-    href: '/expenses/new',
-    icon: PlusCircle,
-  },
+
   {
     name: 'Reports',
     href: '/reports',

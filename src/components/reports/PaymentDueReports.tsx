@@ -223,7 +223,9 @@ export function PaymentDueReports() {
                         <TableCell className="font-medium">
                           {payment.paymentId}
                         </TableCell>
-                        <TableCell>{payment.vendor.name}</TableCell>
+                        <TableCell>
+                          {payment.vendor?.name || 'Unknown Vendor'}
+                        </TableCell>
                         <TableCell className="max-w-[200px] truncate">
                           {payment.description}
                         </TableCell>
@@ -233,7 +235,13 @@ export function PaymentDueReports() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                            {format(new Date(payment.dueDate), 'MMM dd, yyyy')}
+                            {payment.dueDate &&
+                            !isNaN(new Date(payment.dueDate).getTime())
+                              ? format(
+                                  new Date(payment.dueDate),
+                                  'MMM dd, yyyy'
+                                )
+                              : 'No due date'}
                           </div>
                         </TableCell>
                         <TableCell>

@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
@@ -19,7 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { apiClient, type Vendor } from '@/lib/api'
+import {
+  useCreateVendorMutation,
+  useUpdateVendorMutation,
+} from '@/hooks/useVendors'
+import { type Vendor } from '@/lib/api'
 import { vendorSchema, type VendorFormData } from '@/lib/validations'
 
 interface VendorFormProps {
@@ -29,8 +32,8 @@ interface VendorFormProps {
 }
 
 export function VendorForm({ vendor, onSubmit, onCancel }: VendorFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const createVendorMutation = useCreateVendorMutation()
+  const updateVendorMutation = useUpdateVendorMutation()
 
   const form = useForm<VendorFormData>({
     resolver: zodResolver(vendorSchema),
@@ -45,35 +48,28 @@ export function VendorForm({ vendor, onSubmit, onCancel }: VendorFormProps) {
     },
   })
 
-  const handleSubmit = async (data: VendorFormData) => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const isLoading =
+    createVendorMutation.isPending || updateVendorMutation.isPending
+  const error = createVendorMutation.error || updateVendorMutation.error
 
-      if (vendor) {
-        // Update existing vendor
-        const response = await apiClient.updateVendor(vendor.id, data)
-        if (response.success) {
-          onSubmit()
-        } else {
-          setError('Failed to update vendor')
+  const handleSubmit = async (data: VendorFormData) => {
+    if (vendor) {
+      // Update existing vendor
+      updateVendorMutation.mutate(
+        { id: vendor.id, data },
+        {
+          onSuccess: () => {
+            onSubmit()
+          },
         }
-      } else {
-        // Create new vendor
-        const response = await apiClient.createVendor(data)
-        if (response.success) {
-          onSubmit()
-        } else {
-          setError('Failed to create vendor')
-        }
-      }
-    } catch (error) {
-      console.error('Vendor form error:', error)
-      setError(
-        error instanceof Error ? error.message : 'An unexpected error occurred'
       )
-    } finally {
-      setIsLoading(false)
+    } else {
+      // Create new vendor
+      createVendorMutation.mutate(data, {
+        onSuccess: () => {
+          onSubmit()
+        },
+      })
     }
   }
 
@@ -82,7 +78,11 @@ export function VendorForm({ vendor, onSubmit, onCancel }: VendorFormProps) {
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {error && (
           <div className="rounded-md bg-destructive/15 p-3">
-            <div className="text-sm text-destructive">{error}</div>
+            <div className="text-sm text-destructive">
+              {error instanceof Error
+                ? error.message
+                : 'An unexpected error occurred'}
+            </div>
           </div>
         )}
 

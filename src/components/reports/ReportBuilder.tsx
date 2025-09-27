@@ -1,6 +1,6 @@
-import { format, startOfMonth, endOfMonth } from 'date-fns'
+import { endOfMonth, format, startOfMonth } from 'date-fns'
 import { Download, Eye, Filter } from 'lucide-react'
-import React, { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { ReportPreview } from './ReportPreview'
 
@@ -60,35 +60,39 @@ export function ReportBuilder() {
     sortBy: 'date',
   })
   const [showPreview, setShowPreview] = useState(false)
+  const hasAutoSelectedCategories = useRef(false)
+  const hasAutoSelectedVendors = useRef(false)
 
   const { data: categories } = useCategoriesQuery()
   const { data: vendors } = useVendorsQuery({ status: 'ACTIVE' })
   const { generateReport, exportReport, isGenerating, isExporting } =
     useReportGeneration()
 
-  // Auto-select all categories when data loads
+  // Auto-select all categories when data loads (only once)
   useEffect(() => {
     if (
       categories?.data &&
       categories.data.length > 0 &&
-      filters.categories.length === 0
+      !hasAutoSelectedCategories.current
     ) {
       const allCategoryIds = categories.data.map(category => category.id)
       setFilters(prev => ({ ...prev, categories: allCategoryIds }))
+      hasAutoSelectedCategories.current = true
     }
-  }, [categories?.data, filters.categories.length])
+  }, [categories?.data])
 
-  // Auto-select all vendors when data loads
+  // Auto-select all vendors when data loads (only once)
   useEffect(() => {
     if (
       vendors?.data &&
       vendors.data.length > 0 &&
-      filters.vendors.length === 0
+      !hasAutoSelectedVendors.current
     ) {
       const allVendorIds = vendors.data.map(vendor => vendor.id)
       setFilters(prev => ({ ...prev, vendors: allVendorIds }))
+      hasAutoSelectedVendors.current = true
     }
-  }, [vendors?.data, filters.vendors.length])
+  }, [vendors?.data])
 
   const handleFilterChange = <K extends keyof ReportFilters>(
     key: K,
@@ -112,19 +116,19 @@ export function ReportBuilder() {
     }))
   }
 
-  const handleSelectAllCategories = (checked: boolean) => {
+  const handleSelectAllCategories = (checked: boolean | 'indeterminate') => {
     const allCategoryIds = categories?.data?.map(category => category.id) || []
     setFilters(prev => ({
       ...prev,
-      categories: checked ? allCategoryIds : [],
+      categories: checked === true ? allCategoryIds : [],
     }))
   }
 
-  const handleSelectAllVendors = (checked: boolean) => {
+  const handleSelectAllVendors = (checked: boolean | 'indeterminate') => {
     const allVendorIds = vendors?.data?.map(vendor => vendor.id) || []
     setFilters(prev => ({
       ...prev,
-      vendors: checked ? allVendorIds : [],
+      vendors: checked === true ? allVendorIds : [],
     }))
   }
 
@@ -224,13 +228,14 @@ export function ReportBuilder() {
                 <Checkbox
                   id="select-all-categories"
                   checked={
-                    (categories?.data?.length ?? 0) > 0 &&
-                    filters.categories.length ===
-                      (categories?.data?.length ?? 0)
+                    filters.categories.length === 0
+                      ? false
+                      : filters.categories.length ===
+                          (categories?.data?.length ?? 0)
+                        ? true
+                        : 'indeterminate'
                   }
-                  onCheckedChange={checked =>
-                    handleSelectAllCategories(checked as boolean)
-                  }
+                  onCheckedChange={handleSelectAllCategories}
                 />
                 <Label
                   htmlFor="select-all-categories"
@@ -275,12 +280,13 @@ export function ReportBuilder() {
                 <Checkbox
                   id="select-all-vendors"
                   checked={
-                    (vendors?.data?.length ?? 0) > 0 &&
-                    filters.vendors.length === (vendors?.data?.length ?? 0)
+                    filters.vendors.length === 0
+                      ? false
+                      : filters.vendors.length === (vendors?.data?.length ?? 0)
+                        ? true
+                        : 'indeterminate'
                   }
-                  onCheckedChange={checked =>
-                    handleSelectAllVendors(checked as boolean)
-                  }
+                  onCheckedChange={handleSelectAllVendors}
                 />
                 <Label
                   htmlFor="select-all-vendors"
