@@ -289,28 +289,36 @@ export interface ReportQueryParams {
 }
 
 export interface ReportData {
+  expenses: Expense[]
   summary: {
     totalExpenses: number
     totalAmount: number
+    totalAmountVND: number
+    totalAmountUSD: number
     averageAmount: number
-    expenseCount: number
+    statusBreakdown: Record<string, number>
+    dateRange: {
+      from: string
+      to: string
+    }
   }
-  groupedData: Array<{
+  metadata: {
+    generatedAt: string
+    generatedBy: AuthResponse['user']
+    filters: Record<string, any>
+    recordCount: number
+  }
+  groupedData?: Array<{
     group: string
     count: number
     amount: number
     expenses?: Expense[]
   }>
-  chartData: Array<{
-    label: string
-    value: number
-  }>
 }
 
-export interface ExportReportParams {
+export interface ExportReportParams extends ReportQueryParams {
   format: 'excel' | 'csv' | 'pdf'
   reportType: 'summary' | 'detailed' | 'payments-due'
-  filters: ReportQueryParams
 }
 
 export interface ExchangeRateData {
@@ -879,28 +887,52 @@ class ApiClient {
     })
   }
 
-  async getPaymentsDueMonthly(): Promise<ApiResponse<any[]>> {
-    return this.request<any[]>({
+  async getPaymentsDueMonthly(): Promise<ApiResponse<unknown[]>> {
+    return this.request<unknown[]>({
       url: '/reports/payments-due/monthly',
       method: 'GET',
     })
   }
 
-  async getOverduePayments(): Promise<ApiResponse<any[]>> {
-    return this.request<any[]>({
+  async getOverduePayments(): Promise<ApiResponse<unknown[]>> {
+    return this.request<unknown[]>({
       url: '/reports/payments-due/overdue',
       method: 'GET',
     })
   }
 
-  async exportReport(params: ExportReportParams): Promise<Blob> {
+  async exportReport(
+    params: ExportReportParams
+  ): Promise<{ blob: Blob; filename: string }> {
+    console.log('Frontend sending export params:', params)
+
     const response = await this.axiosInstance.request({
       url: '/reports/export',
       method: 'POST',
       data: params,
       responseType: 'blob',
     })
-    return response.data
+
+    console.log('Response headers:', response.headers)
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers['content-disposition']
+    let filename = 'report.xlsx' // fallback
+
+    console.log('Content-Disposition header:', contentDisposition)
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/)
+      if (filenameMatch) {
+        filename = filenameMatch[1]
+        console.log('Extracted filename:', filename)
+      }
+    }
+
+    return {
+      blob: response.data,
+      filename,
+    }
   }
 
   // Currency conversion endpoints

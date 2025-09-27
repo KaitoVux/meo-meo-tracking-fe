@@ -27,6 +27,8 @@ interface ReportPreviewProps {
     groupBy?: 'month' | 'category' | 'vendor' | 'status'
     sortBy?: 'date' | 'amount' | 'category' | 'vendor' | 'status'
     sortOrder?: 'ASC' | 'DESC'
+    totalCategories?: number
+    totalVendors?: number
   }
 }
 
@@ -61,9 +63,7 @@ export function ReportPreview({ filters }: ReportPreviewProps) {
     )
   }
 
-  const { summary, groupedData } = reportData.data
-  // Extract expenses from grouped data if available
-  const expenses = groupedData?.flatMap(group => group.expenses || []) || []
+  const { summary, groupedData, expenses } = reportData.data
 
   return (
     <div className="space-y-6">
@@ -224,13 +224,19 @@ export function ReportPreview({ filters }: ReportPreviewProps) {
                 {expenses?.map((expense: any) => (
                   <TableRow key={expense.id}>
                     <TableCell>
-                      {format(new Date(expense.date), 'MMM dd, yyyy')}
+                      {(() => {
+                        if (!expense.transactionDate) return 'N/A'
+                        const date = new Date(expense.transactionDate)
+                        return isNaN(date.getTime())
+                          ? 'Invalid Date'
+                          : format(date, 'MMM dd, yyyy')
+                      })()}
                     </TableCell>
                     <TableCell className="font-medium">
                       {expense.paymentId}
                     </TableCell>
                     <TableCell>{expense.vendor?.name || 'N/A'}</TableCell>
-                    <TableCell>{expense.category?.name || 'N/A'}</TableCell>
+                    <TableCell>{expense.category || 'N/A'}</TableCell>
                     <TableCell className="max-w-[200px] truncate">
                       {expense.description}
                     </TableCell>

@@ -1,6 +1,6 @@
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { Download, Eye, Filter } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { ReportPreview } from './ReportPreview'
 
@@ -50,7 +50,12 @@ export function ReportBuilder() {
     dateTo: endOfMonth(currentDate),
     categories: [],
     vendors: [],
-    statuses: [],
+    statuses: [
+      ExpenseStatus.DRAFT,
+      ExpenseStatus.IN_PROGRESS,
+      ExpenseStatus.PAID,
+      ExpenseStatus.ON_HOLD,
+    ],
     sortOrder: 'DESC',
     sortBy: 'date',
   })
@@ -60,6 +65,30 @@ export function ReportBuilder() {
   const { data: vendors } = useVendorsQuery({ status: 'ACTIVE' })
   const { generateReport, exportReport, isGenerating, isExporting } =
     useReportGeneration()
+
+  // Auto-select all categories when data loads
+  useEffect(() => {
+    if (
+      categories?.data &&
+      categories.data.length > 0 &&
+      filters.categories.length === 0
+    ) {
+      const allCategoryIds = categories.data.map(category => category.id)
+      setFilters(prev => ({ ...prev, categories: allCategoryIds }))
+    }
+  }, [categories?.data, filters.categories.length])
+
+  // Auto-select all vendors when data loads
+  useEffect(() => {
+    if (
+      vendors?.data &&
+      vendors.data.length > 0 &&
+      filters.vendors.length === 0
+    ) {
+      const allVendorIds = vendors.data.map(vendor => vendor.id)
+      setFilters(prev => ({ ...prev, vendors: allVendorIds }))
+    }
+  }, [vendors?.data, filters.vendors.length])
 
   const handleFilterChange = <K extends keyof ReportFilters>(
     key: K,
@@ -517,9 +546,6 @@ export function ReportBuilder() {
                 <DropdownMenuItem onClick={() => handleExport('csv')}>
                   Export as CSV
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                  Export as PDF
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -533,7 +559,15 @@ export function ReportBuilder() {
       </Card>
 
       {/* Report Preview */}
-      {showPreview && <ReportPreview filters={filters} />}
+      {showPreview && (
+        <ReportPreview
+          filters={{
+            ...filters,
+            totalCategories: categories?.data?.length,
+            totalVendors: vendors?.data?.length,
+          }}
+        />
+      )}
     </div>
   )
 }

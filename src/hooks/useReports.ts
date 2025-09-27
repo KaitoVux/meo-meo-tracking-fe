@@ -26,16 +26,36 @@ interface ExportQuery extends ReportFilters {
 }
 
 // Report generation hook
-export function useReportQuery(filters: ReportFilters) {
+export function useReportQuery(
+  filters: ReportFilters & {
+    totalCategories?: number
+    totalVendors?: number
+  }
+) {
   return useQuery({
     queryKey: ['reports', 'generate', filters],
     queryFn: async () => {
+      // Apply same optimization logic as generateMutation
+      const isAllCategories =
+        filters.categories &&
+        filters.totalCategories &&
+        filters.categories.length === filters.totalCategories
+      const isAllVendors =
+        filters.vendors &&
+        filters.totalVendors &&
+        filters.vendors.length === filters.totalVendors
+      const isAllStatuses = filters.statuses && filters.statuses.length >= 4 // All 4 statuses
+
       const response = await api.generateReport({
         dateFrom: filters.dateFrom?.toISOString(),
         dateTo: filters.dateTo?.toISOString(),
-        categories: filters.categories,
-        vendors: filters.vendors,
-        statuses: filters.statuses,
+        // Use optimized payload structure
+        selectAllCategories: !!isAllCategories,
+        selectAllVendors: !!isAllVendors,
+        selectAllStatuses: !!isAllStatuses,
+        categories: isAllCategories ? [] : filters.categories,
+        vendors: isAllVendors ? [] : filters.vendors,
+        statuses: isAllStatuses ? [] : filters.statuses,
         groupBy: filters.groupBy as
           | 'category'
           | 'vendor'
@@ -185,26 +205,25 @@ export function useReportGeneration() {
         query.vendors.length === query.totalVendors
       const isAllStatuses = query.statuses && query.statuses.length >= 4
 
-      const blob = await api.exportReport({
+      const { blob, filename } = await api.exportReport({
         format: query.format,
         reportType: 'detailed' as const,
-        filters: {
-          dateFrom: query.dateFrom?.toISOString(),
-          dateTo: query.dateTo?.toISOString(),
-          selectAllCategories: !!isAllCategories,
-          selectAllVendors: !!isAllVendors,
-          selectAllStatuses: !!isAllStatuses,
-          categories: isAllCategories ? [] : query.categories,
-          vendors: isAllVendors ? [] : query.vendors,
-          statuses: isAllStatuses ? [] : query.statuses,
-        },
+        dateFrom: query.dateFrom?.toISOString(),
+        dateTo: query.dateTo?.toISOString(),
+        selectAllCategories: !!isAllCategories,
+        selectAllVendors: !!isAllVendors,
+        selectAllStatuses: !!isAllStatuses,
+        categories: isAllCategories ? [] : query.categories,
+        vendors: isAllVendors ? [] : query.vendors,
+        statuses: isAllStatuses ? [] : query.statuses,
       })
 
       // Handle file download
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `report.${query.format}`
+      link.download = filename
+
       document.body.appendChild(link)
       link.click()
       link.remove()
