@@ -15,7 +15,11 @@
     "prepare": "husky",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "build:staging": "vite build --mode staging",
+    "build:production": "vite build --mode production",
+    "deploy:staging": "wrangler pages deploy dist --project-name=business-expense-tracker-frontend --env=staging",
+    "deploy:production": "wrangler pages deploy dist --project-name=business-expense-tracker-frontend --env=production"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
