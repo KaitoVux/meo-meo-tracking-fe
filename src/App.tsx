@@ -13,6 +13,7 @@ import { Dashboard } from './pages/Dashboard'
 import { ExpenseDetailPage } from './pages/ExpenseDetailPage'
 import { ExpenseEditPage } from './pages/ExpenseEditPage'
 import { ExpensesPage } from './pages/ExpensesPage'
+import ImportPage from './pages/ImportPage'
 import { LoginPage } from './pages/LoginPage'
 import { NewExpensePage } from './pages/NewExpensePage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -22,7 +23,6 @@ import { VendorsPage } from './pages/VendorsPage'
 import { WorkflowPage } from './pages/WorkflowPage'
 
 // Placeholder components for other routes
-const Import = () => <div>Import Page - Coming Soon</div>
 const Settings = () => <div>Settings Page - Coming Soon</div>
 
 function App() {
@@ -53,7 +53,7 @@ function App() {
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="workflow" element={<WorkflowPage />} />
             <Route path="reports" element={<ReportsPage />} />
-            <Route path="import" element={<Import />} />
+            <Route path="import" element={<ImportPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="settings" element={<Settings />} />
           </Route>

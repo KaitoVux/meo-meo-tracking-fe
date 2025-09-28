@@ -338,6 +338,42 @@ export interface CurrencyConversionData {
   timestamp: string
 }
 
+// Import interfaces
+export interface ImportError {
+  row: number
+  field: string
+  message: string
+  value?: string
+}
+
+export interface ImportPreview {
+  fileName: string
+  totalRows: number
+  headers: string[]
+  sampleData: Record<string, string>[]
+  errors: ImportError[]
+}
+
+export enum ImportStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
+
+export interface ImportRecord {
+  id: string
+  fileName: string
+  status: ImportStatus
+  progress: number
+  totalRows: number
+  processedRows: number
+  successfulRows: number
+  errorRows: number
+  createdAt: string
+  completedAt?: string
+}
+
 // Enhanced error types for better error handling
 export interface ApiError {
   code: string
@@ -956,6 +992,49 @@ class ApiClient {
       url: '/currency/convert',
       method: 'POST',
       data: { amount, from, to },
+    })
+  }
+
+  // Import endpoints
+  async previewImport(file: File): Promise<ApiResponse<ImportPreview>> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    return this.request<ImportPreview>({
+      url: '/import/preview',
+      method: 'POST',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  }
+
+  async uploadImport(file: File): Promise<ApiResponse<ImportRecord>> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    return this.request<ImportRecord>({
+      url: '/import/upload',
+      method: 'POST',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  }
+
+  async getImportStatus(importId: string): Promise<ApiResponse<ImportRecord>> {
+    return this.request<ImportRecord>({
+      url: `/import/status/${importId}`,
+      method: 'GET',
+    })
+  }
+
+  async getImportHistory(): Promise<ApiResponse<ImportRecord[]>> {
+    return this.request<ImportRecord[]>({
+      url: '/import/history',
+      method: 'GET',
     })
   }
 }
