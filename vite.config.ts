@@ -3,26 +3,26 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+export default defineConfig(({ mode }) => {
+  const config = {
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
-  define: {
-    // Map Cloudflare Pages environment variables to Vite's import.meta.env
-    'import.meta.env.VITE_API_URL': JSON.stringify(
-      process.env.VITE_API_URL || 'http://localhost:3000/api'
-    ),
-    'import.meta.env.VITE_APP_NAME': JSON.stringify(
-      process.env.VITE_APP_NAME || 'Business Expense Tracker'
-    ),
-    'import.meta.env.VITE_APP_VERSION': JSON.stringify(
-      process.env.VITE_APP_VERSION || '1.0.0'
-    ),
-    'import.meta.env.VITE_NODE_ENV': JSON.stringify(
-      process.env.VITE_NODE_ENV || process.env.NODE_ENV || 'development'
-    ),
-  },
+    // Only add define for production mode
+    // In development, let Vite load from .env files naturally
+    ...(mode !== 'development' && {
+      define: {
+        // In production: 'process.env.VAR' string gets replaced by Cloudflare Pages at build time
+        'import.meta.env.VITE_API_URL': 'process.env.VITE_API_URL',
+        'import.meta.env.VITE_APP_NAME': 'process.env.VITE_APP_NAME',
+        'import.meta.env.VITE_APP_VERSION': 'process.env.VITE_APP_VERSION',
+        'import.meta.env.VITE_NODE_ENV': 'process.env.VITE_NODE_ENV',
+      },
+    }),
+  }
+
+  return config
 })
