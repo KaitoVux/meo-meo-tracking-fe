@@ -290,7 +290,8 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats.expensesByStatus?.PAID || 0}
+              {(stats.expensesByStatus as Record<string, number>)?.['PAID'] ||
+                0}
             </div>
             <p className="text-xs text-muted-foreground">
               Completed transactions
