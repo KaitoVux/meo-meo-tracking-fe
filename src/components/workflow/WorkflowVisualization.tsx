@@ -16,6 +16,7 @@ interface WorkflowVisualizationProps {
   expense: Expense
   onStatusChange?: (status: string, notes?: string) => void
   availableTransitions?: string[]
+  isUpdating?: boolean
 }
 
 const statusConfig = {
@@ -86,6 +87,7 @@ export function WorkflowVisualization({
   expense,
   onStatusChange,
   availableTransitions = [],
+  isUpdating = false,
 }: WorkflowVisualizationProps) {
   const currentStatus = expense.status as keyof typeof statusConfig
   const currentConfig = statusConfig[currentStatus]
@@ -151,13 +153,14 @@ export function WorkflowVisualization({
                       variant="outline"
                       size="sm"
                       onClick={() => handleTransition(status)}
+                      disabled={isUpdating}
                       className={`flex items-center space-x-2 ${styles.container} hover:ring-2 hover:ring-offset-1`}
                     >
                       <div className={`p-1 rounded-full ${styles.icon}`}>
                         <TransitionIcon className="h-3 w-3" />
                       </div>
                       <span className={styles.text}>
-                        Move to {config.label}
+                        {isUpdating ? 'Updating...' : `Move to ${config.label}`}
                       </span>
                       <ChevronRight className="h-3 w-3" />
                     </Button>
