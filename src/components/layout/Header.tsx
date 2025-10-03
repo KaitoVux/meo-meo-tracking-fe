@@ -1,11 +1,13 @@
-import { Moon, Sun, User, LogOut } from 'lucide-react'
+import { Moon, Sun, User, LogOut, Plus } from 'lucide-react'
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth'
 
 export function Header() {
   const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
   const [isDark, setIsDark] = React.useState(true)
 
   React.useEffect(() => {
@@ -29,6 +31,11 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-4">
+          <Button onClick={() => navigate('/expenses/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Expense
+          </Button>
+
           <Button variant="ghost" size="icon" onClick={toggleTheme}>
             {isDark ? (
               <Sun className="h-4 w-4" />

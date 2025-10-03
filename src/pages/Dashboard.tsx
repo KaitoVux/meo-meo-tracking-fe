@@ -5,7 +5,7 @@ import {
   DollarSign,
   FileText,
   Users,
-  Clock,
+  CheckCircle,
   Calendar,
   Filter,
 } from 'lucide-react'
@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/select'
 import { useCategoriesQuery } from '@/hooks/useCategories'
 import { useVendorsQuery } from '@/hooks/useVendors'
+import { getStatusLabel, getStatusVariant } from '@/lib/formatters'
 import { useDashboardStatsQuery } from '@/lib/queries/dashboard'
 
 // Chart colors for consistent theming
@@ -88,7 +89,13 @@ export function Dashboard() {
         recentExpenses: [],
       }
     }
-    return dashboardData.data
+
+    const data = dashboardData.data
+    return {
+      ...data,
+      expensesByStatus: data.statusCounts || {},
+      expensesByCategory: data.categoryBreakdown || [],
+    }
   }, [dashboardData])
 
   // Calculate percentage changes (mock data for now)
@@ -105,7 +112,10 @@ export function Dashboard() {
   // Prepare chart data
   const categoryChartData = useMemo(() => {
     return (stats.expensesByCategory || []).map((item, index) => ({
-      ...item,
+      category: item.category,
+      count: item.expenseCount,
+      totalAmount: item.totalAmount,
+      percentage: item.percentage,
       fill: CHART_COLORS[index % CHART_COLORS.length],
     }))
   }, [stats.expensesByCategory])
@@ -113,7 +123,7 @@ export function Dashboard() {
   const statusChartData = useMemo(() => {
     return Object.entries(stats.expensesByStatus || {}).map(
       ([status, count], index) => ({
-        status,
+        status: getStatusLabel(status),
         count,
         fill: CHART_COLORS[index % CHART_COLORS.length],
       })
@@ -183,14 +193,14 @@ export function Dashboard() {
             date={filters.month}
             onDateChange={date => handleFilterChange('month', date)}
             placeholder="Select month"
-            className="w-[200px]"
+            className="w-[200px] h-10"
           />
 
           <Select
             value={filters.category}
             onValueChange={value => handleFilterChange('category', value)}
           >
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[150px] h-10">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -207,7 +217,7 @@ export function Dashboard() {
             value={filters.vendor}
             onValueChange={value => handleFilterChange('vendor', value)}
           >
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[150px] h-10">
               <SelectValue placeholder="Vendor" />
             </SelectTrigger>
             <SelectContent>
@@ -221,7 +231,12 @@ export function Dashboard() {
           </Select>
 
           {(filters.category || filters.vendor) && (
-            <Button variant="outline" size="sm" onClick={clearFilters}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              className="h-10"
+            >
               <Filter className="h-4 w-4 mr-2" />
               Clear
             </Button>
@@ -270,15 +285,15 @@ export function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Approvals
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Paid Expenses</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+            <div className="text-2xl font-bold">
+              {stats.expensesByStatus?.PAID || 0}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Requires your attention
+              Completed transactions
             </p>
           </CardContent>
         </Card>
@@ -339,25 +354,34 @@ export function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ category, count }) => `${category}: ${count}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {categoryChartData.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {categoryChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={categoryChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ category, count }) => `${category}: ${count}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="count"
+                  >
+                    {categoryChartData.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No category data available</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -371,15 +395,24 @@ export function Dashboard() {
             <CardDescription>Current status distribution</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={statusChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="status" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--primary))" />
-              </BarChart>
-            </ResponsiveContainer>
+            {statusChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={statusChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="status" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No status data available</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -420,18 +453,10 @@ export function Dashboard() {
                           ${expense.amount.toLocaleString()}
                         </p>
                         <Badge
-                          variant={
-                            expense.status === 'IN_PROGRESS'
-                              ? 'default'
-                              : expense.status === 'PAID'
-                                ? 'secondary'
-                                : expense.status === 'DRAFT'
-                                  ? 'outline'
-                                  : 'destructive'
-                          }
+                          variant={getStatusVariant(expense.status)}
                           className="text-xs"
                         >
-                          {expense.status}
+                          {getStatusLabel(expense.status)}
                         </Badge>
                       </div>
                     </div>
@@ -449,34 +474,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <Button variant="outline" className="justify-start">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Add New Expense
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <FileText className="h-4 w-4 mr-2" />
-              Generate Report
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <Users className="h-4 w-4 mr-2" />
-              Manage Vendors
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <Clock className="h-4 w-4 mr-2" />
-              Review Approvals
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
