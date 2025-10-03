@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table'
 import { useReportQuery } from '@/hooks/useReports'
 import { ExpenseStatus, type Currency } from '@/lib/api'
+import { getStatusLabel, getStatusVariant } from '@/lib/formatters'
 import { formatCurrency } from '@/lib/utils'
 
 interface ReportPreviewProps {
@@ -244,18 +245,8 @@ export function ReportPreview({ filters }: ReportPreviewProps) {
                       {formatCurrency(expense.amount, expense.currency)}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          expense.status === ExpenseStatus.APPROVED
-                            ? 'default'
-                            : expense.status === ExpenseStatus.PAID
-                              ? 'secondary'
-                              : expense.status === ExpenseStatus.DRAFT
-                                ? 'outline'
-                                : 'destructive'
-                        }
-                      >
-                        {expense.status}
+                      <Badge variant={getStatusVariant(expense.status)}>
+                        {getStatusLabel(expense.status)}
                       </Badge>
                     </TableCell>
                   </TableRow>

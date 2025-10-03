@@ -29,26 +29,13 @@ import {
 import { useCategoriesQuery } from '@/hooks/useCategories'
 import { useExpensesQuery } from '@/hooks/useExpenses'
 import type { Expense, ExpenseQueryParams } from '@/lib/api'
+import { getStatusLabel, getStatusVariant } from '@/lib/formatters'
 
 interface ExpenseListProps {
   onCreateExpense: () => void
   onEditExpense: (expense: Expense) => void
   onViewExpense: (expense: Expense) => void
   onDeleteExpense: (expense: Expense) => void
-}
-
-const statusColors = {
-  DRAFT: 'secondary',
-  IN_PROGRESS: 'default',
-  PAID: 'default',
-  ON_HOLD: 'destructive',
-} as const
-
-const statusLabels = {
-  DRAFT: 'Draft',
-  IN_PROGRESS: 'In Progress',
-  PAID: 'Paid',
-  ON_HOLD: 'On Hold',
 }
 
 export function ExpenseList({
@@ -202,7 +189,9 @@ export function ExpenseList({
                     <TableHead>VAT</TableHead>
                     <TableHead>Total Amount</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right w-[100px]">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -266,11 +255,11 @@ export function ExpenseList({
                         {formatCurrency(expense.amount, expense.currency)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={statusColors[expense.status]}>
-                          {statusLabels[expense.status]}
+                        <Badge variant={getStatusVariant(expense.status)}>
+                          {getStatusLabel(expense.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right w-[100px]">
                         <DropdownActions
                           actions={[
                             createViewAction(() => onViewExpense(expense)),

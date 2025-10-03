@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table'
 import { WorkflowVisualization } from '@/components/workflow'
 import { type ExpenseQueryParams } from '@/lib/api'
+import { getStatusLabel, getStatusVariant } from '@/lib/formatters'
 import {
   useAvailableTransitionsQuery,
   useExpensesQuery,
@@ -120,20 +121,6 @@ export function WorkflowPage() {
       month: 'short',
       day: 'numeric',
     })
-  }
-
-  const statusColors = {
-    DRAFT: 'secondary',
-    IN_PROGRESS: 'default',
-    PAID: 'default',
-    ON_HOLD: 'destructive',
-  } as const
-
-  const statusLabels = {
-    DRAFT: 'Draft',
-    IN_PROGRESS: 'In Progress',
-    PAID: 'Paid',
-    ON_HOLD: 'On Hold',
   }
 
   return (
@@ -327,8 +314,8 @@ export function WorkflowPage() {
                         {formatCurrency(expense.amount, expense.currency)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={statusColors[expense.status]}>
-                          {statusLabels[expense.status]}
+                        <Badge variant={getStatusVariant(expense.status)}>
+                          {getStatusLabel(expense.status)}
                         </Badge>
                       </TableCell>
                       <TableCell>

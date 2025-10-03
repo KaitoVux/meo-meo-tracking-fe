@@ -265,6 +265,13 @@ export interface DashboardStats {
   monthlyExpenses: number
   monthlyAmount: number
   pendingApprovals: number
+  statusCounts: Record<string, number>
+  categoryBreakdown: Array<{
+    category: string
+    expenseCount: number
+    totalAmount: number
+    percentage: number
+  }>
   expensesByStatus: Record<string, number>
   expensesByCategory: Array<{
     category: string
