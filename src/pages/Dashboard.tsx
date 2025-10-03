@@ -90,12 +90,7 @@ export function Dashboard() {
       }
     }
 
-    const data = dashboardData.data
-    return {
-      ...data,
-      expensesByStatus: data.statusCounts || {},
-      expensesByCategory: data.categoryBreakdown || [],
-    }
+    return dashboardData.data
   }, [dashboardData])
 
   // Calculate percentage changes (mock data for now)
@@ -113,9 +108,8 @@ export function Dashboard() {
   const categoryChartData = useMemo(() => {
     return (stats.expensesByCategory || []).map((item, index) => ({
       category: item.category,
-      count: item.expenseCount,
-      totalAmount: item.totalAmount,
-      percentage: item.percentage,
+      count: item.count,
+      amount: item.amount,
       fill: CHART_COLORS[index % CHART_COLORS.length],
     }))
   }, [stats.expensesByCategory])
