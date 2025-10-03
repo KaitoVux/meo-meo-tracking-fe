@@ -10,6 +10,7 @@ on:
   pull_request:
     paths:
       - '**'
+  workflow_dispatch:
 
 jobs:
   deploy:
