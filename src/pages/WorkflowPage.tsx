@@ -1,5 +1,5 @@
 import { Search, Users, Clock, CheckCircle, DollarSign } from 'lucide-react'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useMemo } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,10 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { WorkflowVisualization, ApprovalInterface } from '@/components/workflow'
-import { apiClient, type Expense, type ExpenseQueryParams } from '@/lib/api'
-import { useAvailableTransitionsQuery } from '@/lib/queries/expenses'
-import { useAuthStore } from '@/store/auth'
+import { WorkflowVisualization } from '@/components/workflow'
+import { type ExpenseQueryParams } from '@/lib/api'
+import {
+  useAvailableTransitionsQuery,
+  useExpensesQuery,
+  useUpdateExpenseStatusMutation,
+} from '@/lib/queries/expenses'
 
 interface WorkflowStats {
   pending: number
@@ -33,57 +36,49 @@ interface WorkflowStats {
 }
 
 export function WorkflowPage() {
-  const { user } = useAuthStore()
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  // Get available transitions for selected expense
-  const { data: transitionsResponse } = useAvailableTransitionsQuery(
-    selectedExpense?.id || ''
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(
+    null
   )
-  const availableTransitions = transitionsResponse?.data || []
-  const [stats, setStats] = useState<WorkflowStats>({
-    pending: 0,
-    approved: 0,
-    paid: 0,
-    total: 0,
-  })
+
   const [filters, setFilters] = useState<ExpenseQueryParams>({
     page: 1,
     limit: 25,
-    status: undefined, // No role-based filtering needed
+    status: undefined,
   })
 
-  const loadExpenses = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await apiClient.getExpenses(filters)
-      setExpenses(response.data || [])
+  // Use React Query to fetch expenses
+  const { data: expensesResponse, isLoading: loading } =
+    useExpensesQuery(filters)
+  const expenses = expensesResponse?.data || []
 
-      // Calculate stats
-      const newStats = (response.data || []).reduce(
-        (acc, expense) => {
-          acc.total++
-          if (expense.status === 'IN_PROGRESS') acc.pending++
-          if (expense.status === 'ON_HOLD') acc.approved++
-          if (expense.status === 'PAID') acc.paid++
-          return acc
-        },
-        { pending: 0, approved: 0, paid: 0, total: 0 } as WorkflowStats
-      )
+  // Get selected expense from the list (synced with cache)
+  const selectedExpense = useMemo(
+    () => expenses.find(e => e.id === selectedExpenseId) || null,
+    [expenses, selectedExpenseId]
+  )
 
-      setStats(newStats)
-    } catch (error) {
-      console.error('Failed to load expenses:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [filters])
+  // Get available transitions for selected expense
+  const { data: transitionsResponse } = useAvailableTransitionsQuery(
+    selectedExpenseId || ''
+  )
+  const availableTransitions = transitionsResponse?.data || []
 
-  useEffect(() => {
-    loadExpenses()
-  }, [filters, loadExpenses])
+  // Calculate stats from expenses
+  const stats = useMemo(() => {
+    return expenses.reduce(
+      (acc, expense) => {
+        acc.total++
+        if (expense.status === 'IN_PROGRESS') acc.pending++
+        if (expense.status === 'ON_HOLD') acc.approved++
+        if (expense.status === 'PAID') acc.paid++
+        return acc
+      },
+      { pending: 0, approved: 0, paid: 0, total: 0 } as WorkflowStats
+    )
+  }, [expenses])
+
+  // Use React Query mutation for status updates
+  const updateStatusMutation = useUpdateExpenseStatusMutation()
 
   const handleStatusChange = async (
     expenseId: string,
@@ -91,28 +86,16 @@ export function WorkflowPage() {
     notes?: string
   ) => {
     try {
-      await apiClient.updateExpenseStatus(expenseId, status, notes)
-      await loadExpenses() // Refresh the list
-      if (selectedExpense?.id === expenseId) {
-        // Update selected expense
-        const updatedExpense = {
-          ...selectedExpense,
-          status: status as Expense['status'],
-        }
-        setSelectedExpense(updatedExpense)
-      }
+      await updateStatusMutation.mutateAsync({ id: expenseId, status, notes })
+      // React Query automatically invalidates and refetches:
+      // - expense detail
+      // - status history
+      // - expense lists
+      // - available transitions
     } catch (error) {
       console.error('Failed to update expense status:', error)
       throw error
     }
-  }
-
-  const handleApprove = async (expense: Expense, notes?: string) => {
-    await handleStatusChange(expense.id, 'PAID', notes || '')
-  }
-
-  const handleReject = async (expense: Expense, notes: string) => {
-    await handleStatusChange(expense.id, 'DRAFT', notes)
   }
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -278,34 +261,19 @@ export function WorkflowPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedExpense(null)}
+                      onClick={() => setSelectedExpenseId(null)}
                     >
                       Close
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <WorkflowVisualization
-                      expense={selectedExpense}
-                      onStatusChange={(status, notes) =>
-                        handleStatusChange(selectedExpense.id, status, notes)
-                      }
-                      availableTransitions={availableTransitions}
-                    />
-
-                    {selectedExpense.status !== 'PAID' &&
-                      user?.role === 'ACCOUNTANT' && (
-                        <ApprovalInterface
-                          expense={selectedExpense}
-                          onApprove={notes =>
-                            handleApprove(selectedExpense, notes)
-                          }
-                          onReject={notes =>
-                            handleReject(selectedExpense, notes)
-                          }
-                        />
-                      )}
-                  </div>
+                  <WorkflowVisualization
+                    expense={selectedExpense}
+                    onStatusChange={(status, notes) =>
+                      handleStatusChange(selectedExpense.id, status, notes)
+                    }
+                    availableTransitions={availableTransitions}
+                  />
                 </div>
               )}
 
@@ -327,7 +295,7 @@ export function WorkflowPage() {
                     <TableRow
                       key={expense.id}
                       className={
-                        selectedExpense?.id === expense.id ? 'bg-blue-50' : ''
+                        selectedExpenseId === expense.id ? 'bg-blue-50' : ''
                       }
                     >
                       <TableCell className="font-medium">
@@ -364,9 +332,9 @@ export function WorkflowPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedExpense(expense)}
+                          onClick={() => setSelectedExpenseId(expense.id)}
                         >
-                          {selectedExpense?.id === expense.id
+                          {selectedExpenseId === expense.id
                             ? 'Selected'
                             : 'Select'}
                         </Button>
