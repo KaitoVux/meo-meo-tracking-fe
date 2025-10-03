@@ -49,7 +49,12 @@ export function WorkflowPage() {
   // Use React Query to fetch expenses
   const { data: expensesResponse, isLoading: loading } =
     useExpensesQuery(filters)
-  const expenses = expensesResponse?.data || []
+
+  // Memoize expenses array to prevent unnecessary re-renders
+  const expenses = useMemo(
+    () => expensesResponse?.data ?? [],
+    [expensesResponse?.data]
+  )
 
   // Get selected expense from the list (synced with cache)
   const selectedExpense = useMemo(
@@ -85,6 +90,9 @@ export function WorkflowPage() {
     status: string,
     notes?: string
   ) => {
+    // Prevent concurrent mutations
+    if (updateStatusMutation.isPending) return
+
     try {
       await updateStatusMutation.mutateAsync({ id: expenseId, status, notes })
       // React Query automatically invalidates and refetches:
@@ -273,6 +281,7 @@ export function WorkflowPage() {
                       handleStatusChange(selectedExpense.id, status, notes)
                     }
                     availableTransitions={availableTransitions}
+                    isUpdating={updateStatusMutation.isPending}
                   />
                 </div>
               )}
